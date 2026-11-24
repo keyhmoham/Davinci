@@ -61,6 +61,12 @@ class DavinciConfig:
         if (not isinstance(self.dropout, (int, float)) or isinstance(self.dropout, bool)
                 or not math.isfinite(self.dropout) or not 0.0 <= self.dropout < 1.0):
             raise ValueError("dropout must be a finite number in [0, 1)")
+        for name, value in (
+            ("tie_word_embeddings", self.tie_word_embeddings),
+            ("gradient_checkpointing", self.gradient_checkpointing),
+        ):
+            if not isinstance(value, bool):
+                raise ValueError(f"{name} must be a boolean")
 
     @classmethod
     def from_dict(cls, values):
