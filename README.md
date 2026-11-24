@@ -21,7 +21,7 @@ Davinci is an experimental Persian-first bilingual (Persian/English) language-mo
 - `src/davinci/train.py`: minimal single-process training/evaluation helpers, accumulation, clipping, and optional CUDA AMP/GradScaler.
 - `src/davinci/generation.py`: cached autoregressive generation using canonical prefill/decode, with greedy, top-k, top-p, and EOS handling.
 - `src/davinci/tool_call.py`: strict JSON tool-call parsing and host-controlled allowlisted dispatch; generated code is never evaluated.
-- `src/davinci/data_audit.py`: deterministic Persian/bilingual normalization, quality diagnostics, exact deduplication, and hash-based dataset splitting.
+- `src/davinci/data_audit.py`: deterministic Persian/bilingual normalization, quality diagnostics, exact deduplication, and hash-based dataset splitting.\n- `src/davinci/data_pipeline.py`: strict dataset-manifest validation, explicit license-review gates, artifact SHA-256 verification, and streaming JSONL readers.
 - `src/davinci/sft.py`: canonical chat serialization, tool-trace payload formatting, assistant-only target masking, deterministic grouped splits, and SFT loss helpers.
 - `src/davinci/trajectory.py`: strict agent-trajectory validation, tool-call/result pairing, exact-content deduplication, leakage-aware splitting, and JSONL export.
 - `src/davinci/long_context.py`: experimental compressed historical KV memory; approximate and not integrated into the canonical decoder.
@@ -85,19 +85,19 @@ Both prototypes need representative retrieval evaluation and downstream task-qua
 ## Training and data safety
 
 - Audit source dataset licenses, provenance, duplication, language balance, personal data, and synthetic-data contamination before training.
-- Keep raw data and credentials out of Git. The Colab training notebook reads a GitHub token from a Colab Secret named `GITHUB_TOKEN`; never paste the token into a notebook cell or commit it.
+- Keep raw data, private records, and credentials out of Git. The repository is public, so the Colab notebooks clone it without a GitHub token. Use credentials only for separate private storage or writeback operations, and never embed them in notebook source.
 - Start with the tiny model preset and a small verified dataset. Measure peak allocated/reserved GPU memory, tokens/sec, loss curves, and validation behavior before scaling.
 - Only load trusted training checkpoints. The resumable notebook checkpoint uses pickle-backed state.
 - Do not publish benchmark numbers unless the run, hardware, software, dataset manifest, and exact code revision are recorded.
 
 ## Current verification boundary
 
-Tests are maintained in the repository. Isolated local CPU checks passed for the hierarchical retrieval primitive (7 focused checks) and the strict tool-call protocol (16 focused checks). The cached generation control flow was also checked with a deterministic fake decoder, not with the full canonical model. These are focused isolated checks, not a full checkout test run. All 17 committed notebooks were fetched and their JSON/nbformat structure was checked; they contain no saved execution outputs. A CI syntax/integrity test now checks notebook JSON and pure-Python code cells, but GitHub Actions currently fails before a runner is assigned (`runner_id=0`, no steps), so the repository test suite has **not** been verified by CI. The Colab notebooks have not been executed end-to-end here. Treat unexecuted notebook stages as instructions/code to run and validate, not completed training results.
+GitHub Actions runs the CPU/Python 3.11 regression suite, including decoder, training, generation, tool-call, data-audit, data-pipeline, trajectory, and notebook-integrity tests. The suite has passed in CI; this verifies repository tests only, not GPU training, Colab execution, dataset quality, or model capability. The committed notebooks have not been executed end-to-end here and contain no verified training outputs. Treat notebook stages as reproducible workflows that still require execution in the target environment, not completed training results.
 
 
 ## Complete notebook index
 
-All notebooks are stored in `notebooks/` and can be opened in GitHub or Colab (the repository is private, so Colab must have access to your GitHub account).
+All notebooks are stored in `notebooks/` and can be opened in GitHub or Colab. The repository is public, so read-only cloning does not require a GitHub token.
 
 | Stage | Notebook |
 |---|---|
