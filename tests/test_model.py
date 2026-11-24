@@ -112,8 +112,8 @@ def _dense_attention_reference(attn, x, positions):
     k=attn.k_proj(x).view(b,t,attn.kv_heads,attn.head_dim).transpose(1,2)
     v=attn.v_proj(x).view(b,t,attn.kv_heads,attn.head_dim).transpose(1,2)
     from src.davinci.model import apply_rope
-    q=apply_rope(q,positions,attn.c.rope_theta)
-    k=apply_rope(k,positions,attn.c.rope_theta)
+    q=apply_rope(q,positions,attn.c.rope_theta,attn.c.rope_scaling_factor)
+    k=apply_rope(k,positions,attn.c.rope_theta,attn.c.rope_scaling_factor)
     if attn.groups != 1:
         k=k.repeat_interleave(attn.groups,1)
         v=v.repeat_interleave(attn.groups,1)
@@ -174,3 +174,29 @@ def test_canonical_500m_config_has_expected_parameter_count():
     path = Path(__file__).resolve().parents[1] / "configs" / "davinci_500m.json"
     config = DavinciConfig.from_dict(json.loads(path.read_text(encoding="utf-8")))
     assert count_parameters(config) == 508_960_000
+
+
+
+def test_linear_rope_interpolation_matches_scaled_positions():
+    from src.davinci.model import apply_rope
+    torch.manual_seed(29)
+    x = torch.randn(2, 4, 9, 16)
+    positions = torch.arange(9)
+    interpolated = apply_rope(x, positions, 10000.0, scaling_factor=4.0)
+    reference = apply_rope(x, positions.float() / 4.0, 10000.0)
+    torch.testing.assert_close(interpolated, reference, rtol=1e-6, atol=1e-6)
+
+
+def test_rope_scaling_factor_is_validated_and_used_by_attention():
+    import pytest
+    with pytest.raises(ValueError, match="rope_scaling_factor"):
+        DavinciConfig(rope_scaling_factor=0.0).validate()
+    c = tiny()
+    c.rope_scaling_factor = 2.0
+    model = DavinciForCausalLM(c).eval()
+    ids = torch.randint(0, c.vocab_size, (1, 11))
+    with torch.no_grad():
+        expected = model(ids)["logits"][:, -1:, :]
+        _, caches = model.prefill(ids[:, :-1])
+        actual = model.decode(ids[:, -1:], 10, caches)
+    torch.testing.assert_close(actual, expected, rtol=1e-5, atol=1e-5)
