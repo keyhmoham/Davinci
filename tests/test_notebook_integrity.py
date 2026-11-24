@@ -197,3 +197,12 @@ def test_single_source_default_matches_multi_source_merge_inputs():
     assert "'key':'naab'" in merger
     assert "'key':'persian_blog'" in merger
     assert 'jsonl_path = PROC / f"{selected_key}.jsonl"' in source
+
+
+
+def test_merged_corpus_manifest_reports_script_profile_without_language_claims():
+    source = _notebook_source("Davinci_Corpus_Merge_Builder.ipynb")
+    assert "text_statistics(normalized)" in source
+    assert "'script_profile_not_language_id'" in source
+    assert "'arabic_script_alpha_ratio'" in source
+    assert "not necessarily Persian" in source
