@@ -43,6 +43,8 @@ Before training, validate the manifest for `purpose="preference"` and verify `pr
 
 The notebook uses a frozen reference model and a full-model policy update. It is a correctness-oriented baseline, not an optimized large-model recipe: LoRA/QLoRA, distributed training, reference-model offloading, and automatic preference verification are not implemented. A full 500M run may exceed common free GPU memory.
 
+Response truncation preserves the full response and at least one prompt token; responses too long to leave prompt context are rejected rather than silently trained without their prompt. The scoring path also rejects preference rows with no supervised response tokens.
+
 ## Evaluation requirements
 
 Evaluate against held-out prompts and compare with the SFT checkpoint. Report win rate and confidence intervals, Persian and English separately, response quality, refusal behavior, tool-call validity, and regressions on general language tasks. Never treat training preference accuracy as a general model-quality benchmark.
