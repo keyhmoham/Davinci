@@ -7,6 +7,7 @@ The canonical short-sequence decoder lives in `src/davinci/model.py`. Notebooks 
 - RMSNorm, RoPE, grouped-query attention (GQA), SwiGLU, tied embeddings
 - Hybrid schedule: every `global_every_n_layers` layer is global; other layers use exact causal sliding-window attention, evaluated in bounded query chunks
 - Global full-sequence attention uses SDPA's causal mode without materializing a triangular mask
+- Optional activation/gradient checkpointing during training (`gradient_checkpointing=True`; disabled by default)
 - Full-sequence forward and one-token incremental decoding with per-layer KV caches
 - JSON config + PyTorch state-dict checkpoint save/load
 
@@ -41,7 +42,7 @@ From the repository root, with PyTorch and pytest installed:
 PYTHONPATH=. python -m pytest -q tests/test_model.py tests/test_train.py
 ```
 
-The tests cover finite forward/loss/gradients, full-forward versus prefill/decode parity, tied embeddings, checkpoint round-trip, causal loss, real-model optimizer updates with gradient accumulation, and evaluation-mode restoration. The tests have been added to the repository; they must still be run in the target Colab/runtime before this implementation is considered environment-verified.
+The tests cover finite forward/loss/gradients, checkpointed backward, chunk-size invariance, full-forward versus prefill/decode parity, tied embeddings, checkpoint round-trip, invalid loss inputs, causal loss, real-model optimizer updates with gradient accumulation, and evaluation-mode restoration. The tests have been added to the repository; they must still be run in the target Colab/runtime before this implementation is considered environment-verified.
 
 ## Important limits
 
