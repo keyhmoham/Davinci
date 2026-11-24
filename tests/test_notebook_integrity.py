@@ -122,14 +122,14 @@ def test_dpo_notebook_checks_manifest_and_uses_frozen_reference():
     assert "sequence_log_probs" in source
 
 
-def test_sft_split_is_shared_by_tokenizer_and_finetuning():
+def test_sft_split_uses_prompt_grouping_after_tokenizer_train_split():
     builder = _notebook_source("Davinci_SFT_Reasoning_Agent_Data.ipynb")
     tokenizer = _notebook_source("Davinci_Tokenizer_Training_Evaluation.ipynb")
     trainer = _notebook_source("Davinci_SFT_Training_Chat_Finetuning.ipynb")
     assert 'record["split"]=assign_chat_split(record)' in builder
     assert '"split_field":"split","allowed_splits":["train"]' in tokenizer
-    assert 'item["split"] not in {"train","validation"}' in trainer
-    assert 'item for item in examples if item["split"]=="validation"' in trainer
+    assert 'train_examples,val_examples=split_examples(examples,validation_fraction=VALIDATION_FRACTION,seed=SEED)' in trainer
+    assert '"split_strategy":"normalized_prompt_source_document_exact_content"' in trainer
 
 
 def test_pretraining_uses_audited_manifest_split_labels():
