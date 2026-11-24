@@ -217,3 +217,4 @@ def test_pretraining_run_manifest_records_throughput_and_peak_memory():
     assert '"peak_cuda_allocated_bytes":peak_cuda_allocated_bytes' in source
     assert '"peak_cuda_reserved_bytes":peak_cuda_reserved_bytes' in source
     assert '"session_optimizer_steps":global_step-session_start_step' in source
+    assert "progress.close()\nelapsed_seconds=max(time.time()-start,1e-9)" in source
