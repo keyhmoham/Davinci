@@ -15,6 +15,8 @@ The parser rejects surrounding prose, Markdown fences, duplicate JSON keys,
 unknown fields, invalid tool names, and non-object arguments. Keep the tool-call
 format stable in the SFT dataset and evaluation harness.
 
+If the tokenizer uses a structural `<|tool_call|>` marker, the generation layer should detect that token boundary and pass only the JSON payload after the marker to `parse_tool_call`; the marker is not part of the JSON object. `ToolRegistry.execute_json` accepts the pure JSON body shown above.
+
 ## Host-controlled execution
 
 The application registers each callable explicitly in `ToolRegistry`, together
