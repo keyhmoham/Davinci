@@ -53,6 +53,25 @@ def test_assistant_only_masking_supervises_tool_calls_not_observations():
     assert len(example["input_ids"]) == len(example["labels"])
 
 
+def test_recorded_trajectory_tool_events_are_canonicalized_and_masked_correctly():
+    tokenizer = CharacterTokenizer()
+    messages = [
+        {"role": "user", "content": "compute"},
+        {"role": "assistant", "type": "tool_call", "name": "add", "arguments": {"left": 1, "right": 2}},
+        {"role": "tool", "name": "add", "content": '{"sum":3}', "trusted": False},
+        {"role": "assistant", "content": "3"},
+    ]
+    serialized = serialize_messages(messages)
+    assert tool_call_content("add", {"left": 1, "right": 2}) in serialized
+    assert tool_result_content("add", {"sum": 3}) in serialized
+    example = build_masked_example(messages, tokenizer)
+    call_payload = tool_call_content("add", {"left": 1, "right": 2})
+    result_payload = tool_result_content("add", {"sum": 3})
+    call_start = serialized.index(call_payload)
+    result_start = serialized.index(result_payload)
+    assert all(value != -100 for value in example["labels"][call_start:call_start + len(call_payload)])
+    assert all(value == -100 for value in example["labels"][result_start:result_start + len(result_payload)])
+
 def test_group_split_keeps_same_document_and_duplicate_content_together():
     examples = [
         {"id": "a", "messages": [{"role": "user", "content": "same"}]},
