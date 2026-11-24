@@ -39,7 +39,8 @@ class CompressedKVMemory:
         self.recent_key, self.recent_value, self.recent_positions = key, value, positions
         overflow = key.shape[2] - self.config.recent_window
         group = self.config.compression_group_size
-        count = max(0, (overflow // group) * group)
+        count = min(key.shape[2], ((overflow + group - 1) // group) * group)
+        count = (count // group) * group
         if count:
             old_k, old_v = key[:, :, :count], value[:, :, :count]
             groups = count // group
