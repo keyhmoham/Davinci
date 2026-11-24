@@ -33,3 +33,36 @@ def test_evaluation_restores_training_mode():
     value=evaluate_loss(model,[ids,ids],max_batches=2)
     assert value is not None and value>0
     assert model.training
+
+
+class _OverflowingScaler:
+    def __init__(self):
+        self.scale_value = 2.0
+    def is_enabled(self):
+        return True
+    def get_scale(self):
+        return self.scale_value
+    def scale(self, loss):
+        return loss
+    def unscale_(self, optimizer):
+        pass
+    def step(self, optimizer):
+        # Simulate GradScaler skipping optimizer.step() after detecting inf grads.
+        pass
+    def update(self):
+        self.scale_value /= 2
+
+
+def test_amp_overflow_is_reported_as_skipped_optimizer_step():
+    torch.manual_seed(17)
+    model = tiny_model()
+    optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3)
+    ids = torch.randint(0, 41, (2, 9))
+    before = model.embed_tokens.weight.detach().clone()
+    result = train_microbatch(
+        model, ids, optimizer, scaler=_OverflowingScaler(),
+        gradient_accumulation_steps=1, microbatch_index=0,
+    )
+    assert result["optimizer_step_attempted"]
+    assert not result["optimizer_step"]
+    assert torch.equal(before, model.embed_tokens.weight)
