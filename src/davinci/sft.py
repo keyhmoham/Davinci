@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 from collections.abc import Mapping, Sequence
 from typing import Any
 
@@ -10,6 +11,9 @@ import torch
 import torch.nn.functional as F
 
 from .data_audit import normalize_persian_text
+
+
+_TOOL_NAME_RE = re.compile(r"^[A-Za-z][A-Za-z0-9_.-]{0,63}$")
 
 
 SPECIAL_TOKENS = {
@@ -31,8 +35,8 @@ def _strict_json(value: Any) -> str:
 
 
 def tool_call_content(name: str, arguments: Mapping[str, Any]) -> str:
-    if not isinstance(name, str) or not name.strip():
-        raise ValueError("tool name must be a non-empty string")
+    if not isinstance(name, str) or not _TOOL_NAME_RE.fullmatch(name):
+        raise ValueError("tool name must match [A-Za-z][A-Za-z0-9_.-]{0,63}")
     if not isinstance(arguments, Mapping):
         raise TypeError("tool arguments must be a mapping")
     return SPECIAL_TOKENS["tool_call"] + _strict_json({"name": name, "arguments": dict(arguments)})
