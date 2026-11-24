@@ -37,8 +37,8 @@ class ChatCompletionRequest(BaseModel):
     model: str = "davinci"
     messages: list[ChatMessage] = Field(min_length=1)
     max_tokens: int = Field(default=128, ge=1)
-    temperature: float = Field(default=0.0, ge=0.0, le=2.0)
-    top_p: float = Field(default=1.0, gt=0.0, le=1.0)
+    temperature: float = Field(default=0.0, ge=0.0, le=2.0, allow_inf_nan=False)
+    top_p: float = Field(default=1.0, gt=0.0, le=1.0, allow_inf_nan=False)
     top_k: int | None = Field(default=None, ge=1)
     stream: bool = False
 
@@ -68,6 +68,10 @@ def create_app(
     max_concurrent_requests: int = 1,
 ) -> FastAPI:
     """Create an OpenAI-compatible app around an already-loaded model/tokenizer."""
+    if not isinstance(model_name, str) or not model_name.strip():
+        raise ValueError("model_name must be a non-empty string")
+    if api_key is not None and (not isinstance(api_key, str) or not api_key.strip()):
+        raise ValueError("api_key must be None or a non-empty string")
     for name, value in (("max_input_tokens", max_input_tokens), ("max_new_tokens", max_new_tokens),
                         ("max_total_tokens", max_total_tokens), ("max_concurrent_requests", max_concurrent_requests)):
         if not isinstance(value, int) or isinstance(value, bool) or value <= 0:
