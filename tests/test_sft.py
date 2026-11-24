@@ -90,6 +90,19 @@ def test_group_split_keeps_same_document_and_duplicate_content_together():
     assert not (train_ids & val_ids)
 
 
+def test_split_keeps_identical_user_prompts_together_despite_different_answers():
+    examples = [
+        {"id": "a", "messages": [{"role": "user", "content": "سلام؟"}, {"role": "assistant", "content": "پاسخ اول"}]},
+        {"id": "b", "messages": [{"role": "user", "content": "سلام؟"}, {"role": "assistant", "content": "پاسخ دوم"}]},
+        {"id": "c", "messages": [{"role": "user", "content": "یک سؤال دیگر"}, {"role": "assistant", "content": "پاسخ سوم"}]},
+        {"id": "d", "messages": [{"role": "user", "content": "سؤال چهارم"}, {"role": "assistant", "content": "پاسخ چهارم"}]},
+    ]
+    train, validation = split_examples(examples, validation_fraction=0.5, seed=42)
+    train_ids = {item["id"] for item in train}
+    validation_ids = {item["id"] for item in validation}
+    assert ({"a", "b"} <= train_ids) or ({"a", "b"} <= validation_ids)
+    assert train_ids.isdisjoint(validation_ids)
+
 def test_collator_masks_padding_and_sft_loss_is_finite():
     batch = [
         {"input_ids": [1, 2, 3], "labels": [-100, 2, 3]},
