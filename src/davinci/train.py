@@ -48,19 +48,26 @@ def train_microbatch(model, batch, optimizer, *, scaler=None, amp_dtype=None,
         scaled_loss.backward()
     should_step = (microbatch_index + 1) % gradient_accumulation_steps == 0
     grad_norm = None
+    did_step = False
     if should_step:
-        if scaler is not None and scaler.is_enabled():
+        scaler_enabled = scaler is not None and scaler.is_enabled()
+        old_scale = scaler.get_scale() if scaler_enabled else None
+        if scaler_enabled:
             scaler.unscale_(optimizer)
         if max_grad_norm is not None:
             grad_norm = torch.nn.utils.clip_grad_norm_(model.parameters(), max_grad_norm)
-        if scaler is not None and scaler.is_enabled():
+        if scaler_enabled:
             scaler.step(optimizer)
             scaler.update()
+            # GradScaler lowers its scale when non-finite gradients caused it
+            # to skip optimizer.step(). Do not advance the LR schedule then.
+            did_step = scaler.get_scale() >= old_scale
         else:
             optimizer.step()
+            did_step = True
         optimizer.zero_grad(set_to_none=True)
-    return {"loss": loss.detach(), "optimizer_step": should_step,
-            "grad_norm": grad_norm}
+    return {"loss": loss.detach(), "optimizer_step": did_step,
+            "optimizer_step_attempted": should_step, "grad_norm": grad_norm}
 
 @torch.no_grad()
 def evaluate_loss(model, batches: Iterable, max_batches: int = 20,
