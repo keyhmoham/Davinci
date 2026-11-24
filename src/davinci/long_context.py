@@ -30,6 +30,12 @@ class CompressedKVMemory:
             raise ValueError("key/value must have matching [B,H,T,D] shapes")
         if positions.ndim != 1 or positions.numel() != key.shape[2]:
             raise ValueError("positions must have shape [T]")
+        if positions.device != key.device:
+            raise ValueError("positions and KV tensors must be on the same device")
+        if key.device != value.device or key.dtype != value.dtype:
+            raise ValueError("key and value must have the same device and dtype")
+        if positions.numel() > 1 and torch.any(positions[1:] <= positions[:-1]):
+            raise ValueError("positions must be strictly increasing within each append")
         if self.recent_key is not None:
             if key.shape[:2] != self.recent_key.shape[:2] or key.shape[-1] != self.recent_key.shape[-1]:
                 raise ValueError("KV batch/head/head_dim shape changed")
@@ -64,6 +70,10 @@ class CompressedKVMemory:
             raise ValueError("append KV entries before calling attend")
         if query_positions.ndim != 1 or query_positions.numel() != query.shape[2]:
             raise ValueError("query_positions must have shape [Q]")
+        if query.device != self.recent_key.device or query_positions.device != query.device:
+            raise ValueError("query, query_positions, and cached KV tensors must share a device")
+        if query.dtype != self.recent_key.dtype:
+            raise ValueError("query and cached KV tensors must share a dtype")
         b, h, q_len, dim = query.shape
         if query.shape[:2] != self.recent_key.shape[:2] or dim != self.recent_key.shape[-1]:
             raise ValueError("query/cache batch, head, and head_dim dimensions must match")
@@ -99,4 +109,7 @@ class CompressedKVMemory:
         mask = allowed.reshape(b*h*q_len,1,1,-1)
         out = F.scaled_dot_product_attention(q,k_tensor,v_tensor,attn_mask=mask,
                                              dropout_p=0.0,is_causal=False,scale=scale)
-        return out.reshape(b,h,q_len,dim)
+        out = out.reshape(b,h,q_len,dim)
+        # Define queries with no visible cache entries as zero outputs.
+        has_visible_key = allowed.any(dim=-1)
+        return out.masked_fill(~has_visible_key[:, :, :, None], 0)
