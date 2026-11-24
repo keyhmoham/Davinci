@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - "src/davinci/**"
+      - "notebooks/**"
       - "tests/test_model.py"
       - "tests/test_train.py"
       - "tests/test_long_context.py"
