@@ -50,3 +50,40 @@ def test_pure_python_notebook_cells_compile():
                 raise AssertionError(
                     f"{path.name}, code cell {index}: {exc}"
                 ) from exc
+
+
+def _notebook_source(name: str) -> str:
+    path = NOTEBOOKS / name
+    data = json.loads(path.read_text(encoding="utf-8"))
+    return "\\n".join(
+        "".join(cell.get("source", [])) if isinstance(cell.get("source", []), list)
+        else cell.get("source", "")
+        for cell in data["cells"]
+        if cell.get("cell_type") == "code"
+    )
+
+
+def test_pretraining_notebook_defines_and_checks_corpus_manifest():
+    source = _notebook_source("Davinci_Pretraining_DataLoader_Training_Engine.ipynb")
+    assert "CORPUS_MANIFEST_PATH =" in source
+    assert "CORPUS_MANIFEST_PATH.is_file()" in source
+    assert 'get("license_approved_for_use") is not True' in source
+    assert '"corpus_manifest_sha256":file_sha256(CORPUS_MANIFEST_PATH)' in source
+
+
+def test_public_colab_notebooks_do_not_require_github_secrets():
+    names = (
+        "Davinci_Pretraining_DataLoader_Training_Engine.ipynb",
+        "Davinci_SFT_Training_Chat_Finetuning.ipynb",
+        "Davinci_Agent_Trajectory_Dataset_Builder.ipynb",
+    )
+    for name in names:
+        source = _notebook_source(name)
+        assert "GITHUB_TOKEN" not in source, f"{name} still requires a private-repository token"
+        assert "https://github.com/keyhmoham/Davinci.git" in source
+
+
+def test_sft_checkpoint_has_single_manifest_fingerprint_key():
+    source = _notebook_source("Davinci_SFT_Training_Chat_Finetuning.ipynb")
+    assert source.count('"dataset_manifest_sha256"') == 1
+    assert "sft_manifest_hash=file_sha256(SFT_MANIFEST_PATH)" in source
