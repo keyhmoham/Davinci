@@ -28,6 +28,7 @@ Davinci is an experimental Persian-first bilingual (Persian/English) language-mo
 - `src/davinci/sft.py`: canonical chat serialization, tool-trace payload formatting, assistant-only target masking, deterministic grouped splits, and SFT loss helpers.
 - `src/davinci/preference.py`: preference-pair validation, prompt-grouped deterministic splits, response-only sequence log-probabilities, and the DPO objective.
 - `src/davinci/server.py`: optional single-process OpenAI-compatible HTTP/SSE inference API with bearer authentication and request limits.
+- `src/davinci/evaluation.py`: token-weighted perplexity and normalized exact-match evaluation metrics.
 - `src/davinci/trajectory.py`: strict agent-trajectory validation, tool-call/result pairing, exact-content deduplication, leakage-aware splitting, and JSONL export.
 - `src/davinci/long_context.py`: experimental compressed historical KV memory; approximate and not integrated into the canonical decoder.
 - `src/davinci/hierarchical_retrieval.py`: experimental two-stage candidate retrieval over compressed keys; approximate and not integrated into the canonical decoder.
@@ -83,6 +84,7 @@ The compressed-memory and hierarchical-retrieval modules are intentionally separ
 - [Cached generation API and limitations](docs/GENERATION.md)
 - [DPO preference data and optimization](docs/PREFERENCE_OPTIMIZATION.md)
 - [OpenAI-compatible serving](docs/SERVING.md)
+- [Evaluation protocol and metrics](docs/EVALUATION.md)
 
 Both prototypes need representative retrieval evaluation and downstream task-quality tests before integration. Their existence does not establish 500K-context capability.
 
