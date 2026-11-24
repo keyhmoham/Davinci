@@ -46,7 +46,7 @@ The request accepts `model`, `messages`, `max_tokens`, `temperature`, `top_p`, `
 
 - The server does not execute tool calls. Tool dispatch must remain in a separate trusted host process with allowlists, consent, timeouts, and audit logging.
 - Configure `api_key`; the default `None` disables authentication and is suitable only for isolated local development.
-- This is a single-process reference server with a bounded semaphore, not continuous batching or a multi-tenant serving engine.
+- The app switches the shared model to evaluation mode at creation so concurrent inference requests cannot accidentally toggle dropout through train/eval mode restoration. This is a single-process reference server with a bounded semaphore, not continuous batching or a multi-tenant serving engine.
 - Streaming is token-by-token and may have lower throughput than a dedicated inference engine.
 - No model quantization, paged attention, speculative decoding, distributed serving, request cancellation protocol, or production metrics are implemented.
 - The model and tokenizer must be loaded from the same verified run lineage.
