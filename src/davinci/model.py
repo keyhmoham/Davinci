@@ -1,4 +1,4 @@
-"""Canonical Davinci decoder reference. Dense masks are for short tests, not 500K context."""
+"""Canonical Davinci decoder reference; chunking does not make global attention 500K-scalable."""
 from __future__ import annotations
 from dataclasses import asdict, dataclass
 import math
