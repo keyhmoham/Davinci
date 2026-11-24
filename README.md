@@ -49,6 +49,7 @@ PYTHONPATH=. python -m pytest -q \
   tests/test_tool_call.py \
   tests/test_generation.py \
   tests/test_data_audit.py \
+  tests/test_sft.py \
   tests/test_notebook_integrity.py
 ```
 
