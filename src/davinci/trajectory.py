@@ -41,9 +41,13 @@ def validate_trajectory(item: Any) -> list[str]:
         if role == "assistant":
             assistant_seen = True
 
-        if message.get("type") == "tool_call":
-            name = message.get("name")
-            arguments = message.get("arguments")
+        if message.get("type") == "tool_call" or "tool_call" in message:
+            call = message.get("tool_call", message)
+            if not isinstance(call, Mapping):
+                issues.append(prefix + "tool_call must be an object")
+                continue
+            name = call.get("name")
+            arguments = call.get("arguments")
             if role != "assistant":
                 issues.append(prefix + "tool_call must be assistant-authored")
             if not isinstance(name, str) or not _TOOL_NAME.fullmatch(name):
