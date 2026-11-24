@@ -34,3 +34,31 @@ def test_tied_embeddings_and_checkpoint_roundtrip():
         m.save_pretrained(d); restored=DavinciForCausalLM.from_pretrained(d).eval()
         with torch.no_grad(): actual=restored(ids)["logits"]
     torch.testing.assert_close(actual,expected)
+
+
+def test_gradient_checkpointing_backward():
+    c=tiny(); c.gradient_checkpointing=True
+    m=DavinciForCausalLM(c).train()
+    ids=torch.randint(0,c.vocab_size,(2,9))
+    loss=m(ids,labels=ids)["loss"]
+    assert torch.isfinite(loss)
+    loss.backward()
+    assert any(p.grad is not None for p in m.parameters())
+    assert all(p.grad is None or torch.isfinite(p.grad).all() for p in m.parameters())
+
+
+def test_invalid_loss_inputs_raise_clear_errors():
+    m=DavinciForCausalLM(tiny())
+    one=torch.randint(0,m.config.vocab_size,(1,1))
+    try:
+        m(one,labels=one)
+        assert False, "expected short-sequence error"
+    except ValueError as exc:
+        assert "two tokens" in str(exc)
+    ids=torch.randint(0,m.config.vocab_size,(1,4))
+    labels=torch.full_like(ids,-100)
+    try:
+        m(ids,labels=labels)
+        assert False, "expected empty-target error"
+    except ValueError as exc:
+        assert "no next-token targets" in str(exc)
