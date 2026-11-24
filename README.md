@@ -21,8 +21,10 @@ Davinci is an experimental Persian-first bilingual (Persian/English) language-mo
 - `src/davinci/train.py`: minimal single-process training/evaluation helpers, accumulation, clipping, and optional CUDA AMP/GradScaler.
 - `src/davinci/generation.py`: cached autoregressive generation using canonical prefill/decode, with greedy, top-k, top-p, and EOS handling.
 - `src/davinci/tool_call.py`: strict JSON tool-call parsing and host-controlled allowlisted dispatch; generated code is never evaluated.
-- `src/davinci/data_audit.py`: deterministic Persian/bilingual normalization, quality diagnostics, exact deduplication, and hash-based dataset splitting.\n- `src/davinci/data_pipeline.py`: strict dataset-manifest validation, explicit license-review gates, artifact SHA-256 verification, and streaming JSONL readers.
-- `src/davinci/sft.py`: canonical chat serialization, tool-trace payload formatting, assistant-only target masking, deterministic grouped splits, and SFT loss helpers.\n- `src/davinci/preference.py`: preference-pair validation, prompt-grouped deterministic splits, response-only sequence log-probabilities, and the DPO objective.
+- `src/davinci/data_audit.py`: deterministic Persian/bilingual normalization, quality diagnostics, exact deduplication, and hash-based dataset splitting.
+- `src/davinci/data_pipeline.py`: strict dataset-manifest validation, explicit license-review gates, artifact SHA-256 verification, and streaming JSONL readers.
+- `src/davinci/sft.py`: canonical chat serialization, tool-trace payload formatting, assistant-only target masking, deterministic grouped splits, and SFT loss helpers.
+- `src/davinci/preference.py`: preference-pair validation, prompt-grouped deterministic splits, response-only sequence log-probabilities, and the DPO objective.
 - `src/davinci/trajectory.py`: strict agent-trajectory validation, tool-call/result pairing, exact-content deduplication, leakage-aware splitting, and JSONL export.
 - `src/davinci/long_context.py`: experimental compressed historical KV memory; approximate and not integrated into the canonical decoder.
 - `src/davinci/hierarchical_retrieval.py`: experimental two-stage candidate retrieval over compressed keys; approximate and not integrated into the canonical decoder.
@@ -79,7 +81,8 @@ The compressed-memory and hierarchical-retrieval modules are intentionally separ
 - [Tool-call protocol and host-side security boundary](docs/TOOL_CALL_PROTOCOL.md)
 - [Dataset audit contracts and limitations](docs/DATA_AUDIT.md)
 - [Dataset provenance, manifest, and split contracts](docs/DATA_PIPELINE.md)
-- [Cached generation API and limitations](docs/GENERATION.md)\n- [DPO preference data and optimization](docs/PREFERENCE_OPTIMIZATION.md)
+- [Cached generation API and limitations](docs/GENERATION.md)
+- [DPO preference data and optimization](docs/PREFERENCE_OPTIMIZATION.md)
 
 Both prototypes need representative retrieval evaluation and downstream task-quality tests before integration. Their existence does not establish 500K-context capability.
 
@@ -114,7 +117,9 @@ All notebooks are stored in `notebooks/` and can be opened in GitHub or Colab. T
 | Runtime | [Runtime Integration Benchmark](notebooks/Davinci_Runtime_Integration_Benchmark.ipynb) |
 | Evaluation | [Evaluation Harness and Baselines](notebooks/Davinci_Evaluation_Harness_Baselines.ipynb) |
 | Supervised fine-tuning | [SFT Chat Fine-tuning](notebooks/Davinci_SFT_Training_Chat_Finetuning.ipynb) |
-| Agent trajectories | [Agent Trajectory Dataset Builder](notebooks/Davinci_Agent_Trajectory_Dataset_Builder.ipynb) |\n| Preference data | [Human Preference Dataset Builder](notebooks/Davinci_Preference_Dataset_Builder.ipynb) |\n| Preference optimization | [DPO Preference Optimization](notebooks/Davinci_DPO_Preference_Optimization.ipynb) |
+| Agent trajectories | [Agent Trajectory Dataset Builder](notebooks/Davinci_Agent_Trajectory_Dataset_Builder.ipynb) |
+| Preference data | [Human Preference Dataset Builder](notebooks/Davinci_Preference_Dataset_Builder.ipynb) |
+| Preference optimization | [DPO Preference Optimization](notebooks/Davinci_DPO_Preference_Optimization.ipynb) |
 | Inference | [Inference, Generation, and Export](notebooks/Davinci_Inference_Generation_Export.ipynb) |
 | Repository checks | [Repository Audit Checks](notebooks/Davinci_Repository_Audit_Checks.ipynb) |
 | End-to-end smoke test | [End-to-End Tiny Integration Test](notebooks/Davinci_End_to_End_Tiny_Integration_Test.ipynb) |
