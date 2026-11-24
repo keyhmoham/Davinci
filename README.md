@@ -81,7 +81,7 @@ Both prototypes need representative retrieval evaluation and downstream task-qua
 
 ## Current verification boundary
 
-Tests are maintained in the repository. A local isolated CPU check of the hierarchical retrieval logic passed seven focused checks, but it was not a full checkout test run. All 17 committed notebooks were fetched and their JSON/nbformat structure was checked; they contain no saved execution outputs. A CI syntax/integrity test now checks notebook JSON and pure-Python code cells, but GitHub Actions currently fails before a runner is assigned (`runner_id=0`, no steps), so the repository test suite has **not** been verified by CI. The Colab notebooks have not been executed end-to-end here. Treat unexecuted notebook stages as instructions/code to run and validate, not completed training results.
+Tests are maintained in the repository. Isolated local CPU checks passed for the hierarchical retrieval primitive (7 focused checks) and the strict tool-call protocol (16 focused checks); neither was a full checkout test run. All 17 committed notebooks were fetched and their JSON/nbformat structure was checked; they contain no saved execution outputs. A CI syntax/integrity test now checks notebook JSON and pure-Python code cells, but GitHub Actions currently fails before a runner is assigned (`runner_id=0`, no steps), so the repository test suite has **not** been verified by CI. The Colab notebooks have not been executed end-to-end here. Treat unexecuted notebook stages as instructions/code to run and validate, not completed training results.
 
 
 ## Complete notebook index
