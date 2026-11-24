@@ -63,14 +63,32 @@ def _message_content(message: Mapping[str, Any], role: str) -> str:
     content = message.get("content", "")
     if not isinstance(content, str):
         raise TypeError("message content must be a string")
-    if role == "tool" and message.get("name") and not content.startswith(SPECIAL_TOKENS["tool_result"]):
+    if role == "tool" and message.get("name"):
+        trusted = message.get("trusted")
+        if trusted is not None and not isinstance(trusted, bool):
+            raise TypeError("trusted must be a boolean when provided")
+        if content.startswith(SPECIAL_TOKENS["tool_result"]):
+            if trusted is None:
+                return content
+            try:
+                payload = json.loads(content[len(SPECIAL_TOKENS["tool_result"]):], parse_constant=lambda value: (_ for _ in ()).throw(
+                    ValueError(f"invalid JSON constant: {value}")
+                ))
+            except (json.JSONDecodeError, ValueError) as exc:
+                raise ValueError("canonical tool result payload must be strict JSON") from exc
+            if not isinstance(payload, dict) or payload.get("name") != message["name"] or "result" not in payload:
+                raise ValueError("canonical tool result name or result does not match the message")
+            if "trusted" in payload and payload["trusted"] != trusted:
+                raise ValueError("canonical tool result trust label conflicts with message metadata")
+            payload["trusted"] = trusted
+            return SPECIAL_TOKENS["tool_result"] + _strict_json(payload)
         try:
             result = json.loads(content, parse_constant=lambda value: (_ for _ in ()).throw(
                 ValueError(f"invalid JSON constant: {value}")
             ))
         except (json.JSONDecodeError, ValueError):
             result = content
-        return tool_result_content(message["name"], result, trusted=message.get("trusted"))
+        return tool_result_content(message["name"], result, trusted=trusted)
     return content
 
 def serialize_messages(messages: Sequence[Mapping[str, Any]]) -> str:
