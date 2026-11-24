@@ -7,7 +7,7 @@
 - `system`, `user`, and `tool` messages are context only and receive `-100` labels.
 - Assistant text and assistant tool-call payloads are supervised, including the assistant structural markers and end-of-turn marker.
 - Recorded agent trajectories may represent a tool call structurally (`type: tool_call`, `name`, `arguments`) rather than as a preformatted `content` string. The SFT helper converts these to the canonical `<|tool_call|>` plus strict JSON payload.
-- Recorded tool observations (`role: tool`, `name`, `content`) are normalized to `<|tool_result|>` plus a JSON payload when the content is valid JSON; otherwise the observation is represented as a JSON string. Tool observations remain masked from the loss.
+- Recorded tool observations (`role: tool`, `name`, `content`) are normalized to `<|tool_result|>` plus a JSON payload when the content is valid JSON; otherwise the observation is represented as a JSON string. If supplied, the explicit `trusted` boolean is preserved in that payload. Tool observations remain masked from the loss; the trust flag is contextual metadata, not a security control or proof of correctness.
 - Already-canonical tool-call/result content is not wrapped a second time.
 - Tool names in both call and result payloads follow the runtime grammar: an ASCII letter followed by at most 63 ASCII letters, digits, underscores, dots, or hyphens.
 
