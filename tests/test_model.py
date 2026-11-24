@@ -159,3 +159,18 @@ def test_config_rejects_non_integer_and_non_finite_values():
         DavinciConfig(gradient_checkpointing=1).validate()
     with pytest.raises(ValueError, match="tie_word_embeddings"):
         DavinciConfig(tie_word_embeddings="yes").validate()
+
+
+def test_parameter_count_matches_instantiated_tiny_model():
+    from src.davinci.model import count_parameters
+    model = DavinciForCausalLM(tiny())
+    assert count_parameters(model.config) == sum(p.numel() for p in model.parameters())
+
+
+def test_canonical_500m_config_has_expected_parameter_count():
+    import json
+    from pathlib import Path
+    from src.davinci.model import count_parameters
+    path = Path(__file__).resolve().parents[1] / "configs" / "davinci_500m.json"
+    config = DavinciConfig.from_dict(json.loads(path.read_text(encoding="utf-8")))
+    assert count_parameters(config) == 508_960_000
