@@ -164,3 +164,10 @@ def test_multi_source_corpus_merge_is_provenance_gated_and_disk_deduplicated():
     assert "CREATE TABLE seen (digest TEXT PRIMARY KEY)" in source
     assert "license_approved_for_use':all(" in source
     assert "combined_jsonl_sha256':sha256_file(OUTPUT)" in source
+
+
+def test_corpus_merge_exports_near_duplicate_review_report_without_auto_filtering():
+    source = _notebook_source("Davinci_Corpus_Merge_Builder.ipynb")
+    assert "find_near_duplicate_pairs" in source
+    assert "near_duplicate_candidates.json" in source
+    assert "near_duplicate_audit" in source
