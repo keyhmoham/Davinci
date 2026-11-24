@@ -49,3 +49,35 @@ def test_compressed_memory_attention_masks_future_recent_tokens():
     second.append(changed_key,changed_value,torch.arange(8))
     out2=second.attend(query,qpos)
     torch.testing.assert_close(out1,out2,rtol=0,atol=0)
+
+
+def test_append_in_chunks_matches_single_append_state():
+    torch.manual_seed(23)
+    cfg=CompressedMemoryConfig(recent_window=4,compression_group_size=2,retrieval_top_k=3)
+    key=torch.randn(2,2,11,8); value=torch.randn_like(key)
+    positions=torch.arange(11)
+    single=CompressedKVMemory(cfg)
+    single.append(key,value,positions)
+    chunked=CompressedKVMemory(cfg)
+    for start,end in [(0,3),(3,7),(7,11)]:
+        chunked.append(key[:,:,start:end],value[:,:,start:end],positions[start:end])
+    torch.testing.assert_close(chunked.recent_key,single.recent_key)
+    torch.testing.assert_close(chunked.recent_value,single.recent_value)
+    torch.testing.assert_close(chunked.memory_key,single.memory_key)
+    torch.testing.assert_close(chunked.memory_value,single.memory_value)
+    assert torch.equal(chunked.recent_positions,single.recent_positions)
+    assert torch.equal(chunked.end_positions,single.end_positions)
+
+def test_append_rejects_non_monotonic_positions_within_chunk():
+    cache=CompressedKVMemory(CompressedMemoryConfig(recent_window=4,compression_group_size=2))
+    x=torch.randn(1,1,3,4)
+    with pytest.raises(ValueError,match="strictly increasing"):
+        cache.append(x,x,torch.tensor([1,3,2]))
+
+def test_query_before_all_cached_tokens_returns_zero():
+    cache=CompressedKVMemory(CompressedMemoryConfig(recent_window=4,compression_group_size=2))
+    x=torch.randn(1,1,6,4)
+    cache.append(x,x,torch.arange(6))
+    query=torch.randn(1,1,1,4)
+    out=cache.attend(query,torch.tensor([-1]))
+    assert torch.equal(out,torch.zeros_like(out))
