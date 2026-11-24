@@ -12,6 +12,7 @@ on:
     paths:
       - "src/davinci/**"
       - "tests/test_model.py"
+      - "tests/test_train.py"
       - "tests/test_long_context.py"
       - ".github/workflows/model-tests.yml"
 
