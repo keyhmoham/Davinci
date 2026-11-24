@@ -20,6 +20,7 @@ Davinci is an experimental Persian-first bilingual (Persian/English) language-mo
 - `src/davinci/train.py`: minimal single-process training/evaluation helpers, accumulation, clipping, and optional CUDA AMP/GradScaler.
 - `src/davinci/generation.py`: cached autoregressive generation using canonical prefill/decode, with greedy, top-k, top-p, and EOS handling.
 - `src/davinci/tool_call.py`: strict JSON tool-call parsing and host-controlled allowlisted dispatch; generated code is never evaluated.
+- `src/davinci/data_audit.py`: deterministic Persian/bilingual normalization, quality diagnostics, exact deduplication, and hash-based dataset splitting.
 - `src/davinci/long_context.py`: experimental compressed historical KV memory; approximate and not integrated into the canonical decoder.
 - `src/davinci/hierarchical_retrieval.py`: experimental two-stage candidate retrieval over compressed keys; approximate and not integrated into the canonical decoder.
 - `notebooks/`: data, tokenizer, architecture, training, evaluation, and integration workflows.
@@ -45,6 +46,7 @@ PYTHONPATH=. python -m pytest -q \
   tests/test_hierarchical_retrieval.py \
   tests/test_tool_call.py \
   tests/test_generation.py \
+  tests/test_data_audit.py \
   tests/test_notebook_integrity.py
 ```
 
@@ -70,6 +72,7 @@ The compressed-memory and hierarchical-retrieval modules are intentionally separ
 - [Compressed memory design and limitations](docs/COMPRESSED_MEMORY_EXPERIMENT.md)
 - [Hierarchical retrieval design and limitations](docs/HIERARCHICAL_RETRIEVAL_EXPERIMENT.md)
 - [Tool-call protocol and host-side security boundary](docs/TOOL_CALL_PROTOCOL.md)
+- [Dataset audit contracts and limitations](docs/DATA_AUDIT.md)
 - [Cached generation API and limitations](docs/GENERATION.md)
 
 Both prototypes need representative retrieval evaluation and downstream task-quality tests before integration. Their existence does not establish 500K-context capability.
