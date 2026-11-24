@@ -6,6 +6,10 @@
 
 Davinci is an experimental Persian-first Persian/English language-model project. The repository contains a proposed ~500M-parameter decoder implementation, data preparation and training workflows, preference optimization primitives, evaluation notebooks, and an optional reference inference server.
 
+## Repository licensing
+
+The GitHub repository currently has no `LICENSE` file. Public visibility does not grant permission to reuse or redistribute this code. A repository license must be selected and added before describing the project as open source.
+
 ## Intended use
 
 - Research and engineering experiments on Persian, English, and code-mixed language modeling.
