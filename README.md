@@ -1,0 +1,80 @@
+# Davinci
+
+Davinci is an experimental Persian-first bilingual (Persian/English) language-model research project. The repository contains a proposed ~500M-parameter decoder, data/tokenizer/training notebooks, evaluation utilities, and explicitly experimental long-context retrieval prototypes.
+
+> **Status:** research implementation and training pipeline scaffolding. This repository does not contain a pretrained, instruction-tuned, or validated 500K-context model. Notebook cells and cloud training runs must be executed in the target environment before their outputs can be treated as experimental results.
+
+## Start here
+
+1. Read the architecture and compute assumptions: [500M architecture planning](notebooks/Davinci_500M_Architecture_Compute_Planning.ipynb).
+2. Prepare and audit text data: [Persian dataset pipeline](notebooks/Davinci_Persian_Dataset_Pipeline.ipynb).
+3. Train and evaluate the tokenizer: [Tokenizer training and evaluation](notebooks/Davinci_Tokenizer_Training_Evaluation.ipynb).
+4. Build SFT/reasoning data: [SFT and agent data](notebooks/Davinci_SFT_Reasoning_Agent_Data.ipynb) and [agent trajectory builder](notebooks/Davinci_Agent_Trajectory_Dataset_Builder.ipynb).
+5. Inspect the canonical decoder: [`src/davinci/model.py`](src/davinci/model.py) and [runtime documentation](docs/MODEL_RUNTIME.md).
+6. Run the small-scale training engine: [pretraining data loader and training engine](notebooks/Davinci_Pretraining_DataLoader_Training_Engine.ipynb). Begin with the notebook's `tiny` preset; do not select the target preset until memory and throughput are measured on the actual accelerator.
+7. Evaluate and export: [evaluation harness](notebooks/Davinci_Evaluation_Harness_Baselines.ipynb), [inference/generation/export](notebooks/Davinci_Inference_Generation_Export.ipynb), and [end-to-end tiny integration test](notebooks/Davinci_End_to_End_Tiny_Integration_Test.ipynb).
+
+## Repository map
+
+- `src/davinci/model.py`: canonical PyTorch decoder reference (RMSNorm, RoPE, GQA, SwiGLU, hybrid local/global causal attention, KV cache).
+- `src/davinci/train.py`: minimal single-process training/evaluation helpers, accumulation, clipping, and optional CUDA AMP/GradScaler.
+- `src/davinci/long_context.py`: experimental compressed historical KV memory; approximate and not integrated into the canonical decoder.
+- `src/davinci/hierarchical_retrieval.py`: experimental two-stage candidate retrieval over compressed keys; approximate and not integrated into the canonical decoder.
+- `notebooks/`: data, tokenizer, architecture, training, evaluation, and integration workflows.
+- `tests/`: short-sequence correctness and regression tests.
+- `experiments/`: synthetic microbenchmarks; these are not model-quality benchmarks.
+- `docs/`: runtime and experiment limitations.
+
+## Local setup
+
+Python 3.11+ is recommended. Install PyTorch for your platform and pytest:
+
+```bash
+python -m pip install torch pytest
+```
+
+Run the model, training, and memory regression tests from the repository root:
+
+```bash
+PYTHONPATH=. python -m pytest -q \
+  tests/test_model.py \
+  tests/test_train.py \
+  tests/test_long_context.py \
+  tests/test_hierarchical_retrieval.py
+```
+
+Run the experimental microbenchmarks separately:
+
+```bash
+PYTHONPATH=. python experiments/benchmark_compressed_memory.py --device cpu
+PYTHONPATH=. python experiments/benchmark_hierarchical_retrieval.py --device cpu
+```
+
+The benchmark outputs are synthetic diagnostics. Record the exact hardware, software versions, command-line arguments, and JSON output when comparing changes.
+
+## Architecture snapshot
+
+The proposed target configuration is 28 decoder layers, hidden size 1,280, 20 query heads, 4 key/value heads, head dimension 64, SwiGLU intermediate size 3,328, and a 32K vocabulary. The architecture notebook calculates a parameter estimate; it is not a guarantee of training feasibility on a particular GPU.
+
+The reference decoder uses exact causal sliding-window attention in non-global layers and exact full-history causal attention in designated global layers. Query chunking reduces temporary attention-mask memory, but global attention still has quadratic compute. The current implementation is not a 500K-token context solution. A validated positional-extension method, scalable global retrieval/memory, long-context training, and task-level evaluation are still required.
+
+## Experimental memory prototypes
+
+The compressed-memory and hierarchical-retrieval modules are intentionally separate from the canonical decoder:
+
+- [Compressed memory design and limitations](docs/COMPRESSED_MEMORY_EXPERIMENT.md)
+- [Hierarchical retrieval design and limitations](docs/HIERARCHICAL_RETRIEVAL_EXPERIMENT.md)
+
+Both prototypes need representative retrieval evaluation and downstream task-quality tests before integration. Their existence does not establish 500K-context capability.
+
+## Training and data safety
+
+- Audit source dataset licenses, provenance, duplication, language balance, personal data, and synthetic-data contamination before training.
+- Keep raw data and credentials out of Git. The Colab training notebook reads a GitHub token from a Colab Secret named `GITHUB_TOKEN`; never paste the token into a notebook cell or commit it.
+- Start with the tiny model preset and a small verified dataset. Measure peak allocated/reserved GPU memory, tokens/sec, loss curves, and validation behavior before scaling.
+- Only load trusted training checkpoints. The resumable notebook checkpoint uses pickle-backed state.
+- Do not publish benchmark numbers unless the run, hardware, software, dataset manifest, and exact code revision are recorded.
+
+## Current verification boundary
+
+Tests are maintained in the repository and a small isolated CPU check has been run for the new hierarchical retrieval primitive. GitHub Actions runs currently fail before a runner is assigned (the reported job has `runner_id=0` and no steps), so the complete repository test suite has **not** been verified by CI. The Colab notebooks have not been executed end-to-end here. Treat all unexecuted notebook stages as instructions/code to run and validate, not completed training results.
