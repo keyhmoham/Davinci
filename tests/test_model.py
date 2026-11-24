@@ -154,3 +154,8 @@ def test_config_rejects_non_integer_and_non_finite_values():
         DavinciConfig(rope_theta=float("nan")).validate()
     with pytest.raises(ValueError, match="dropout"):
         DavinciConfig(dropout=float("inf")).validate()
+
+    with pytest.raises(ValueError, match="gradient_checkpointing"):
+        DavinciConfig(gradient_checkpointing=1).validate()
+    with pytest.raises(ValueError, match="tie_word_embeddings"):
+        DavinciConfig(tie_word_embeddings="yes").validate()
