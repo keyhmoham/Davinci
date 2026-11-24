@@ -25,3 +25,15 @@ Run: PYTHONPATH=. python -m pytest -q tests/test_long_context.py
 The implementation requires strictly increasing positions both within each append call and across append calls. KV tensors must share dtype/device and their batch, head, and head-dimension shape must remain stable. Query tensors and positions must be on the cache device and use the cache dtype for queries. Queries with no causally visible cached entries are defined to return zero.
 
 Chunked appends are intended to preserve the same group boundaries and retained state as appending the same ordered sequence in one call; a regression test checks this invariant. These checks do not establish numerical equivalence to full, uncompressed attention.
+
+
+## Synthetic benchmark
+
+A small synthetic benchmark is available at `experiments/benchmark_compressed_memory.py`:
+
+```bash
+PYTHONPATH=. python experiments/benchmark_compressed_memory.py
+PYTHONPATH=. python experiments/benchmark_compressed_memory.py --device cpu --tokens 2048 --recent-window 512
+```
+
+It reports append and attention latency, KV storage ratio, and pooled-group retrieval recall against an exact max-token-score oracle over the historical groups. The recall measure is only a retrieval diagnostic: it does not measure answer quality, long-range reasoning, or end-to-end decoder speed. Run it on the target hardware and preserve the JSON output with the hardware/software configuration before comparing variants.
