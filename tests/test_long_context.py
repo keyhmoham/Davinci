@@ -33,3 +33,19 @@ def test_compressed_memory_rejects_invalid_position_order():
 def test_compressed_memory_config_validation():
     with pytest.raises(ValueError):
         CompressedKVMemory(CompressedMemoryConfig(recent_window=0))
+
+def test_compressed_memory_attention_masks_future_recent_tokens():
+    torch.manual_seed(19)
+    cfg=CompressedMemoryConfig(recent_window=4,compression_group_size=2,retrieval_top_k=4)
+    key=torch.randn(1,1,8,8); value=torch.randn_like(key)
+    query=torch.randn(1,1,1,8); qpos=torch.tensor([6])
+    first=CompressedKVMemory(cfg)
+    first.append(key,value,torch.arange(8))
+    out1=first.attend(query,qpos)
+    changed_key=key.clone(); changed_value=value.clone()
+    changed_key[:,:,7,:] += 1000
+    changed_value[:,:,7,:] -= 1000
+    second=CompressedKVMemory(cfg)
+    second.append(changed_key,changed_value,torch.arange(8))
+    out2=second.attend(query,qpos)
+    torch.testing.assert_close(out1,out2,rtol=0,atol=0)
