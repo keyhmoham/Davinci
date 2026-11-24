@@ -14,5 +14,6 @@
   "tie_word_embeddings": true,
   "gradient_checkpointing": false,
   "attention_chunk_size": 128,
-  "global_attention_chunk_size": 64
+  "global_attention_chunk_size": 64,
+  "rope_scaling_factor": 1
 }
