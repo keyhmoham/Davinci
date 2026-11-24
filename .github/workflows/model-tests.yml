@@ -24,6 +24,14 @@ on:
       - "notebooks/**"
       - "tests/**"
       - "requirements-test.txt"
+      - "requirements-server.txt"
+      - "pyproject.toml"
+      - "README.md"
+      - "docs/**"
+      - "MODEL_CARD.md"
+      - "DATASET_CARD_TEMPLATE.md"
+      - "RELEASE_CHECKLIST.md"
+      - ".gitignore"
       - ".github/workflows/model-tests.yml"
 
 jobs:
