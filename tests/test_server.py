@@ -117,3 +117,28 @@ def test_server_rejects_tokenizer_vocabulary_mismatch():
             return 99
     with pytest.raises(ValueError, match="vocabulary size"):
         create_app(FakeModel(), WrongTokenizer())
+
+
+
+def test_request_schema_rejects_unknown_roles_and_oversized_message_lists():
+    client, _ = make_client()
+    unknown_role = client.post("/v1/chat/completions", json={
+        "messages": [{"role": "function", "content": "not supported"}],
+    })
+    assert unknown_role.status_code == 422
+    too_many = client.post("/v1/chat/completions", json={
+        "messages": [{"role": "user", "content": "x"} for _ in range(129)],
+    })
+    assert too_many.status_code == 422
+
+
+def test_request_schema_rejects_empty_and_oversized_message_content():
+    client, _ = make_client()
+    empty = client.post("/v1/chat/completions", json={
+        "messages": [{"role": "user", "content": ""}],
+    })
+    assert empty.status_code == 422
+    oversized = client.post("/v1/chat/completions", json={
+        "messages": [{"role": "user", "content": "x" * 200_001}],
+    })
+    assert oversized.status_code == 422
