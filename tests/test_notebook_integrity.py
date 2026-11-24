@@ -87,3 +87,19 @@ def test_sft_checkpoint_has_single_manifest_fingerprint_key():
     source = _notebook_source("Davinci_SFT_Training_Chat_Finetuning.ipynb")
     assert source.count('"dataset_manifest_sha256"') == 1
     assert "sft_manifest_hash=file_sha256(SFT_MANIFEST_PATH)" in source
+
+
+def test_corpus_pipeline_exports_fingerprinted_deterministic_splits():
+    source = _notebook_source("Davinci_Persian_Dataset_Pipeline.ipynb")
+    assert "def stable_split(" in source
+    assert 'row["split"] = stable_split(row["sha256"])' in source
+    assert "_train.jsonl" in source and "_validation.jsonl" in source
+    assert '"train_jsonl_sha256"' in source
+    assert '"validation_jsonl_sha256"' in source
+    assert '"license_approved_for_use": LICENSE_APPROVED_FOR_USE' in source
+
+
+def test_tokenizer_uses_only_training_partition_of_split_corpus():
+    source = _notebook_source("Davinci_Tokenizer_Training_Evaluation.ipynb")
+    assert '"allowed_splits":["train"]' in source
+    assert 'obj.get(split_field) not in allowed_splits' in source
