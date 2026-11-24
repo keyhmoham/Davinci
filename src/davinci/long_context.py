@@ -14,6 +14,8 @@ class CompressedMemoryConfig:
         for name, value in vars(self).items():
             if value <= 0:
                 raise ValueError(f"{name} must be positive")
+        if self.compression_group_size > self.recent_window:
+            raise ValueError("compression_group_size must not exceed recent_window")
 
 class CompressedKVMemory:
     """Exact recent KV plus mean-pooled historical groups; approximate attention."""
