@@ -57,7 +57,7 @@ def _restore_rng_state(state: Mapping[str, Any]) -> None:
             raise RuntimeError("Checkpoint contains CUDA RNG state but CUDA is unavailable")
         if len(cuda_states) != torch.cuda.device_count():
             raise RuntimeError("CUDA device count differs from the checkpoint RNG state")
-        torch.cuda.set_rng_state_all(cuda_states)
+        torch.cuda.set_rng_state_all([state.cpu() for state in cuda_states])
 
 
 def _gradient_state(model) -> dict[str, torch.Tensor | None]:
