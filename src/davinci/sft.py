@@ -9,6 +9,8 @@ from typing import Any
 import torch
 import torch.nn.functional as F
 
+from .data_audit import normalize_persian_text
+
 
 SPECIAL_TOKENS = {
     "system": "<|system|>",
@@ -141,6 +143,16 @@ def _group_keys(example: Mapping[str, Any]) -> list[str]:
     keys.append("content:" + hashlib.sha256(
         json.dumps(payload, sort_keys=True, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
     ).hexdigest())
+    if isinstance(payload, Sequence) and not isinstance(payload, (str, bytes)):
+        user_parts = [
+            normalize_persian_text(message["content"])
+            for message in payload
+            if isinstance(message, Mapping) and message.get("role") == "user"
+            and isinstance(message.get("content"), str)
+        ]
+        prompt = "\n".join(part for part in user_parts if part).strip()
+        if prompt:
+            keys.append("prompt:" + hashlib.sha256(prompt.encode("utf-8")).hexdigest())
     return keys
 
 
