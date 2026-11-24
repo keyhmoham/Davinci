@@ -10,7 +10,7 @@ from typing import Any
 
 from .data_audit import normalize_persian_text
 
-_TOOL_NAME = re.compile(r"^[A-Za-z0-9_.-]{1,64}$")
+_TOOL_NAME = re.compile(r"^[A-Za-z][A-Za-z0-9_.-]{0,63}$")
 
 
 def validate_trajectory(item: Any) -> list[str]:
