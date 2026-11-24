@@ -69,10 +69,14 @@ class KVCache:
             self.positions = torch.cat((self.positions, positions), dim=0)
         # During multi-token prefill, retain all keys until attention is computed:
         # deeper-layer hidden states for early prompt tokens are still required.
-        if trim and self.window is not None and self.key.shape[2] > self.window:
+        if trim:
+            self.trim()
+        return self.key, self.value, self.positions
+
+    def trim(self):
+        if self.window is not None and self.key is not None and self.key.shape[2] > self.window:
             self.key, self.value = self.key[:,:,-self.window:,:], self.value[:,:,-self.window:,:]
             self.positions = self.positions[-self.window:]
-        return self.key, self.value, self.positions
 
 class GQAAttention(nn.Module):
     def __init__(self, c, layer_idx):
@@ -108,6 +112,9 @@ class GQAAttention(nn.Module):
             allowed = allowed & (delta < self.window)
         y = F.scaled_dot_product_attention(q,k,v,attn_mask=allowed,
                 dropout_p=self.c.dropout if self.training else 0.0, is_causal=False)
+        # Prefill needs the full prompt for every query, then can evict old local KV.
+        if cache is not None and t > 1:
+            cache.trim()
         return self.o_proj(y.transpose(1,2).contiguous().view(b,t,-1))
 
 class SwiGLU(nn.Module):
