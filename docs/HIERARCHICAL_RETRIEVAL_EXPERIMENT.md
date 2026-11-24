@@ -12,11 +12,7 @@ It is not wired into `Davinci`'s canonical attention path.
 4. Score individual keys only inside those selected blocks and return the best
    `top_k` entries.
 
-For M memory entries, block size B, and C selected blocks, the coarse stage
-scores approximately M/B centroids and the fine stage scores at most C*B
-entries per query. This reduces fine-stage candidate scoring when C*B << M,
-but adds centroid construction/scoring and does not guarantee recall. If all
-blocks are selected, the result is exact relative to flat dot-product top-k.
+For M memory entries, block size B, Q queries, and C selected blocks, this implementation first rebuilds block centroids in O(MD) work per call, scores approximately M/B centroids per query, and scores at most C*B individual entries per query. It therefore reduces fine-stage query-key comparisons when C*B << M, but centroid construction itself still scans all M keys. A production implementation would need incrementally maintained or cached centroids to avoid rebuilding them for each query batch. This two-stage approximation does not guarantee recall. If all blocks are selected, the result is exact relative to flat dot-product top-k.
 
 ## Important limitations
 
