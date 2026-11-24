@@ -18,6 +18,7 @@ class DavinciConfig:
     intermediate_size: int = 3328
     norm_eps: float = 1e-5
     rope_theta: float = 10000.0
+    rope_scaling_factor: float = 1.0
     local_window: int = 4096
     global_every_n_layers: int = 4
     dropout: float = 0.0
@@ -54,7 +55,8 @@ class DavinciConfig:
             raise ValueError("num_attention_heads must be divisible by num_key_value_heads")
         if self.head_dim % 2:
             raise ValueError("head_dim must be even for split-half RoPE")
-        for name, value in (("norm_eps", self.norm_eps), ("rope_theta", self.rope_theta)):
+        for name, value in (("norm_eps", self.norm_eps), ("rope_theta", self.rope_theta),
+                            ("rope_scaling_factor", self.rope_scaling_factor)):
             if (not isinstance(value, (int, float)) or isinstance(value, bool)
                     or not math.isfinite(value) or value <= 0):
                 raise ValueError(f"{name} must be a finite positive number")
@@ -92,10 +94,13 @@ def count_parameters(config: DavinciConfig) -> int:
     return embedding + config.num_hidden_layers * (attention + mlp + layer_norms) + d + output_head
 
 
-def apply_rope(x, positions, theta):
+def apply_rope(x, positions, theta, scaling_factor=1.0):
     d = x.shape[-1]
     inv = theta ** (-torch.arange(0, d, 2, device=x.device, dtype=torch.float32) / d)
-    angles = torch.outer(positions.float(), inv)
+    if (not isinstance(scaling_factor, (int, float)) or isinstance(scaling_factor, bool)
+            or not math.isfinite(scaling_factor) or scaling_factor <= 0):
+        raise ValueError("scaling_factor must be a finite positive number")
+    angles = torch.outer(positions.float() / float(scaling_factor), inv)
     angles = torch.cat((angles, angles), dim=-1)
     cos, sin = angles.cos().to(x.dtype)[None,None], angles.sin().to(x.dtype)[None,None]
     half = d // 2
@@ -151,7 +156,7 @@ class GQAAttention(nn.Module):
         q = self.q_proj(x).view(b,t,self.heads,self.head_dim).transpose(1,2)
         k = self.k_proj(x).view(b,t,self.kv_heads,self.head_dim).transpose(1,2)
         v = self.v_proj(x).view(b,t,self.kv_heads,self.head_dim).transpose(1,2)
-        q, k = apply_rope(q, positions, self.c.rope_theta), apply_rope(k, positions, self.c.rope_theta)
+        q, k = apply_rope(q, positions, self.c.rope_theta, self.c.rope_scaling_factor), apply_rope(k, positions, self.c.rope_theta, self.c.rope_scaling_factor)
         if cache is not None:
             expected_window = None if self.is_global else self.window
             if cache.window != expected_window:
