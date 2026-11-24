@@ -2,7 +2,7 @@
 from .model import DavinciConfig, DavinciForCausalLM, KVCache, count_parameters
 from .train import causal_lm_loss, evaluate_loss, train_microbatch
 from .generation import generate, sample_next_token
-from .data_audit import (
+from .data_pipeline import (\n    DatasetManifestError, iter_jsonl, iter_text_records, load_dataset_manifest,\n    sha256_file, validate_dataset_manifest, verify_dataset_artifact,\n)\nfrom .data_audit import (
     assign_split, content_sha256, deduplicate_records, normalize_persian_text,
     quality_reasons, text_statistics,
 )
@@ -23,7 +23,7 @@ __all__ = [
     "audit_trajectories", "export_jsonl", "split_trajectories", "trajectory_hash", "validate_trajectory",
     "SPECIAL_TOKENS", "build_masked_example", "causal_sft_loss", "collate_masked",
     "serialize_messages", "split_examples", "tool_call_content", "tool_result_content",
-    "assign_split", "content_sha256", "deduplicate_records", "normalize_persian_text",
+    "DatasetManifestError", "iter_jsonl", "iter_text_records", "load_dataset_manifest",\n    "sha256_file", "validate_dataset_manifest", "verify_dataset_artifact",\n    "assign_split", "content_sha256", "deduplicate_records", "normalize_persian_text",
     "quality_reasons", "text_statistics",
     "ToolCall", "ToolCallError", "ToolDefinition", "ToolExecutionError",
     "ToolRegistry", "parse_tool_call",
