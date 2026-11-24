@@ -9,7 +9,7 @@ Davinci is an experimental Persian-first bilingual (Persian/English) language-mo
 ## Start here
 
 1. Read the architecture and compute assumptions: [500M architecture planning](notebooks/Davinci_500M_Architecture_Compute_Planning.ipynb).
-2. Prepare and audit text data: [Persian dataset pipeline](notebooks/Davinci_Persian_Dataset_Pipeline.ipynb), then [merge audited pretraining sources](notebooks/Davinci_Corpus_Merge_Builder.ipynb).
+2. Prepare and audit text data: [Persian dataset pipeline](notebooks/Davinci_Persian_Dataset_Pipeline.ipynb), then [merge audited pretraining sources](notebooks/Davinci_Corpus_Merge_Builder.ipynb). Review near-duplicate candidates with [the near-duplicate review notebook](notebooks/Davinci_Near_Duplicate_Review.ipynb); candidates are not auto-deleted.
 3. Train and evaluate the tokenizer: [Tokenizer training and evaluation](notebooks/Davinci_Tokenizer_Training_Evaluation.ipynb).
 4. Build SFT/reasoning data: [SFT and agent data](notebooks/Davinci_SFT_Reasoning_Agent_Data.ipynb) and [agent trajectory builder](notebooks/Davinci_Agent_Trajectory_Dataset_Builder.ipynb).
 5. Inspect the canonical decoder: [`src/davinci/model.py`](src/davinci/model.py) and [runtime documentation](docs/MODEL_RUNTIME.md).
