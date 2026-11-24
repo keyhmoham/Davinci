@@ -95,7 +95,10 @@ def validate_trajectory(item: Any) -> list[str]:
 
 def trajectory_hash(item: Mapping[str, Any]) -> str:
     try:
-        payload = json.dumps(item, sort_keys=True, ensure_ascii=False, separators=(",", ":"), allow_nan=False)
+        payload = json.dumps(
+            {"language": item.get("language"), "messages": item.get("messages")},
+            sort_keys=True, ensure_ascii=False, separators=(",", ":"), allow_nan=False,
+        )
     except (TypeError, ValueError) as exc:
         raise ValueError("trajectory must be strict JSON-serializable") from exc
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
