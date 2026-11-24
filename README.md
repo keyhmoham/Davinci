@@ -24,6 +24,7 @@ Davinci is an experimental Persian-first bilingual (Persian/English) language-mo
 - `src/davinci/generation.py`: cached autoregressive generation using canonical prefill/decode, with greedy, top-k, top-p, and EOS handling.
 - `src/davinci/tool_call.py`: strict JSON tool-call parsing and host-controlled allowlisted dispatch; generated code is never evaluated.
 - `src/davinci/data_audit.py`: deterministic Persian/bilingual normalization, quality diagnostics, exact deduplication, and hash-based dataset splitting.
+- `src/davinci/near_dedup.py`: approximate SimHash/LSH candidate discovery with Jaccard verification; emits review candidates rather than deleting data automatically.
 - `src/davinci/data_pipeline.py`: strict dataset-manifest validation, explicit license-review gates, artifact SHA-256 verification, and streaming JSONL readers.
 - `src/davinci/sft.py`: canonical chat serialization, tool-trace payload formatting, assistant-only target masking, deterministic grouped splits, and SFT loss helpers.
 - `src/davinci/preference.py`: preference-pair validation, prompt-grouped deterministic splits, response-only sequence log-probabilities, and the DPO objective.
