@@ -132,6 +132,12 @@ All notebooks are stored in `notebooks/` and can be opened in GitHub or Colab. T
 | Long-context synthetic eval | [Long Context Curriculum Synthetic Evaluation](notebooks/Davinci_Long_Context_Curriculum_Synthetic_Evaluation.ipynb) |
 
 
+## Reproducible training checkpoints
+
+The canonical checkpoint API is in [`src/davinci/checkpoint.py`](src/davinci/checkpoint.py), with the trusted-checkpoint contract and resume example in [`docs/TRAINING_CHECKPOINTS.md`](docs/TRAINING_CHECKPOINTS.md). It atomically saves model/optimizer/scheduler/scaler state, Python/NumPy/PyTorch RNG states, optional in-flight gradients, and caller-supplied data-cursor state. The pretraining Colab notebook uses this helper and verifies a run fingerprint before resume. Exact data replay still depends on the caller's deterministic loader and cursor; the current notebook keeps `NUM_WORKERS=0`.
+
+Only load checkpoints produced by a trusted run: optimizer and RNG state require pickle-backed PyTorch serialization. CPU CI tests the serialization/recovery contract; no Colab or GPU training run has been performed here.
+
 ## Long-context evaluation and profiling
 
 The experimental synthetic retrieval helpers live in `src/davinci/long_context_eval.py`. They generate deterministic Persian/English needle tasks, measure lengths with the selected tokenizer, and write a JSONL plus SHA-256 manifest. The Colab notebook `notebooks/Davinci_Long_Context_Curriculum_Synthetic_Evaluation.ipynb` uses the trained SentencePiece model at the documented Drive path; it stops if that artifact is missing rather than estimating token counts from characters.
