@@ -91,6 +91,7 @@ Both prototypes need representative retrieval evaluation and downstream task-qua
 ## Training and data safety
 
 - Audit source dataset licenses, provenance, duplication, language balance, personal data, and synthetic-data contamination before training.
+- The repository currently has no `LICENSE` file. Public visibility is not a license grant; choose and add an explicit repository license before inviting reuse.
 - Keep raw data, private records, and credentials out of Git. The repository is public, so the Colab notebooks clone it without a GitHub token. Use credentials only for separate private storage or writeback operations, and never embed them in notebook source.
 - Start with the tiny model preset and a small verified dataset. Measure peak allocated/reserved GPU memory, tokens/sec, loss curves, and validation behavior before scaling.
 - Only load trusted training checkpoints. The resumable notebook checkpoint uses pickle-backed state.
