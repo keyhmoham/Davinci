@@ -42,10 +42,15 @@ def tool_call_content(name: str, arguments: Mapping[str, Any]) -> str:
     return SPECIAL_TOKENS["tool_call"] + _strict_json({"name": name, "arguments": dict(arguments)})
 
 
-def tool_result_content(name: str, result: Any) -> str:
+def tool_result_content(name: str, result: Any, *, trusted: bool | None = None) -> str:
     if not isinstance(name, str) or not _TOOL_NAME_RE.fullmatch(name):
         raise ValueError("tool name must match [A-Za-z][A-Za-z0-9_.-]{0,63}")
-    return SPECIAL_TOKENS["tool_result"] + _strict_json({"name": name, "result": result})
+    if trusted is not None and not isinstance(trusted, bool):
+        raise TypeError("trusted must be a boolean when provided")
+    payload = {"name": name, "result": result}
+    if trusted is not None:
+        payload["trusted"] = trusted
+    return SPECIAL_TOKENS["tool_result"] + _strict_json(payload)
 
 
 def _message_content(message: Mapping[str, Any], role: str) -> str:
@@ -65,7 +70,7 @@ def _message_content(message: Mapping[str, Any], role: str) -> str:
             ))
         except (json.JSONDecodeError, ValueError):
             result = content
-        return tool_result_content(message["name"], result)
+        return tool_result_content(message["name"], result, trusted=message.get("trusted"))
     return content
 
 def serialize_messages(messages: Sequence[Mapping[str, Any]]) -> str:
