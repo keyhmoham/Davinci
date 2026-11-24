@@ -108,11 +108,17 @@ def build_masked_example(
 
 
 def _group_key(example: Mapping[str, Any]) -> str:
-    for field in ("source_document_id", "document_id", "example_id", "id"):
+    for field in ("source_document_id", "document_id"):
         value = example.get(field)
         if value is not None and str(value):
             return f"{field}:{value}"
-    payload = example.get("messages", example)
+    payload = example.get("messages")
+    if payload is None:
+        for field in ("example_id", "id"):
+            value = example.get(field)
+            if value is not None and str(value):
+                return f"{field}:{value}"
+        payload = example
     return "content:" + hashlib.sha256(
         json.dumps(payload, sort_keys=True, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
     ).hexdigest()
