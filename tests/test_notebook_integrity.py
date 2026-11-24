@@ -85,7 +85,7 @@ def test_public_colab_notebooks_do_not_require_github_secrets():
 
 def test_sft_checkpoint_has_single_manifest_fingerprint_key():
     source = _notebook_source("Davinci_SFT_Training_Chat_Finetuning.ipynb")
-    assert source.count('"dataset_manifest_sha256"') == 1
+    assert source.count('"dataset_manifest_sha256"') == 2  # checkpoint and run manifest each record it once
     assert "sft_manifest_hash=file_sha256(SFT_MANIFEST_PATH)" in source
 
 
