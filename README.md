@@ -35,7 +35,7 @@ Python 3.11+ is recommended. Install PyTorch for your platform and pytest:
 python -m pip install torch pytest
 ```
 
-Run the model, training, tool-call, notebook, and memory regression tests from the repository root:
+Run the model, training, generation, tool-call, notebook, and memory regression tests from the repository root:
 
 ```bash
 PYTHONPATH=. python -m pytest -q \
