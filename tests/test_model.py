@@ -62,3 +62,29 @@ def test_invalid_loss_inputs_raise_clear_errors():
         assert False, "expected empty-target error"
     except ValueError as exc:
         assert "no next-token targets" in str(exc)
+
+
+def test_chunked_local_attention_matches_single_chunk():
+    torch.manual_seed(11)
+    c1=tiny(); c1.attention_chunk_size=3
+    c2=tiny(); c2.attention_chunk_size=64
+    m1=DavinciForCausalLM(c1).eval()
+    m2=DavinciForCausalLM(c2).eval()
+    m2.load_state_dict(m1.state_dict())
+    ids=torch.randint(0,c1.vocab_size,(2,23))
+    with torch.no_grad():
+        a=m1(ids)["logits"]
+        b=m2(ids)["logits"]
+    torch.testing.assert_close(a,b,rtol=1e-5,atol=1e-5)
+
+
+def test_chunked_local_attention_cache_parity():
+    torch.manual_seed(13)
+    c=tiny(); c.attention_chunk_size=4
+    m=DavinciForCausalLM(c).eval()
+    ids=torch.randint(0,c.vocab_size,(1,21))
+    with torch.no_grad():
+        expected=m(ids)["logits"][:,-1:,:]
+        _,cache=m.prefill(ids[:,:-1])
+        actual=m.decode(ids[:,-1:],20,cache)
+    torch.testing.assert_close(actual,expected,rtol=1e-5,atol=1e-5)
