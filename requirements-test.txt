@@ -1,3 +1,5 @@
 # Test tooling for the repository's Python 3.11 CI environment.
 # Install PyTorch separately using the official selector for your CPU/CUDA platform.
 pytest==8.3.5
+fastapi==0.115.8
+httpx==0.28.1
