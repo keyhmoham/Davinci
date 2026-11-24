@@ -29,9 +29,7 @@ The built-in validator supports a constrained JSON Schema subset: object,
 array, string, integer, number, boolean, null, required properties, property
 schemas, additionalProperties, enum, array item schemas, min/max item counts,
 uniqueItems, min/max string lengths, regex pattern, and numeric minimum/maximum.
-Unsupported schema keywords are not interpreted; keep schemas within this
-documented subset or validate them in the host application with a full JSON
-Schema implementation.
+Unsupported schema keywords are rejected when a tool is registered; keep schemas within this documented subset or validate them in the host application with a full JSON Schema implementation.
 
 `execute_json` serializes tool results with `ensure_ascii=False` and rejects
 non-JSON results and NaN/Infinity. Tools are synchronous; asynchronous tools
