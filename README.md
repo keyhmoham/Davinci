@@ -132,6 +132,10 @@ All notebooks are stored in `notebooks/` and can be opened in GitHub or Colab. T
 | Long-context synthetic eval | [Long Context Curriculum Synthetic Evaluation](notebooks/Davinci_Long_Context_Curriculum_Synthetic_Evaluation.ipynb) |
 
 
+## Model card
+
+Use [`MODEL_CARD_TEMPLATE.md`](MODEL_CARD_TEMPLATE.md) for a release card. It deliberately contains placeholders rather than fabricated training data, metrics, or capabilities.
+
 ## Release readiness
 
 See [`docs/RELEASE_READINESS.md`](docs/RELEASE_READINESS.md) for the evidence-based checklist separating completed repository engineering from required dataset review, Colab/GPU execution, actual training, benchmark validation, and any 500K-context claim.
