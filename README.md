@@ -132,6 +132,10 @@ All notebooks are stored in `notebooks/` and can be opened in GitHub or Colab. T
 | Long-context synthetic eval | [Long Context Curriculum Synthetic Evaluation](notebooks/Davinci_Long_Context_Curriculum_Synthetic_Evaluation.ipynb) |
 
 
+## Release readiness
+
+See [`docs/RELEASE_READINESS.md`](docs/RELEASE_READINESS.md) for the evidence-based checklist separating completed repository engineering from required dataset review, Colab/GPU execution, actual training, benchmark validation, and any 500K-context claim.
+
 ## Preference data and DPO
 
 The human-preference builder deliberately exports unapproved data by default. Review provenance, annotation quality, privacy/consent, and upstream terms before approval. The DPO notebook verifies the preference artifact hash and base SFT/tokenizer provenance, splits by prompt, and uses deterministic resumable checkpoints. See [`docs/PREFERENCE_OPTIMIZATION.md`](docs/PREFERENCE_OPTIMIZATION.md). It remains a full-parameter single-process baseline and requires both policy and frozen reference models in memory; no preference labels or model-quality claims are fabricated.
