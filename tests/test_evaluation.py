@@ -63,3 +63,25 @@ def test_exact_match_metrics_normalizes_persian_and_checks_lengths():
         exact_match_metrics(["a"],[])
     with pytest.raises(ValueError,match="at least one"):
         exact_match_metrics([],[])
+
+
+def test_grouped_exact_match_reports_explicit_language_and_task_breakdowns():
+    from src.davinci.evaluation import grouped_exact_match_metrics
+
+    result = grouped_exact_match_metrics(
+        ["مي‌روم", "hello", "2"],
+        ["می‌روم", "bye", "2"],
+        ["fa", "en", "math"],
+    )
+    assert result["fa"] == {"correct": 1, "total": 1, "accuracy": 1.0}
+    assert result["en"] == {"correct": 0, "total": 1, "accuracy": 0.0}
+    assert result["overall"] == {"correct": 2, "total": 3, "accuracy": 2 / 3}
+
+
+def test_grouped_exact_match_rejects_missing_or_invalid_group_labels():
+    from src.davinci.evaluation import grouped_exact_match_metrics
+
+    with pytest.raises(ValueError, match="equal non-zero"):
+        grouped_exact_match_metrics(["a"], ["a"], [])
+    with pytest.raises(ValueError, match="non-empty"):
+        grouped_exact_match_metrics(["a"], ["a"], [" "])
