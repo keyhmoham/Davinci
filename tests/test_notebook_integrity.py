@@ -138,3 +138,19 @@ def test_pretraining_uses_audited_manifest_split_labels():
     assert "\\u2066-\\u2069" in corpus
     assert 'VALIDATION_FRACTION=float(manifest_validation_fraction)' in pretraining
     assert 'obj.get("split")==self.split' in pretraining
+
+
+def test_sft_and_dpo_runs_verify_upstream_tokenizer_lineage():
+    sft = _notebook_source("Davinci_SFT_Training_Chat_Finetuning.ipynb")
+    dpo = _notebook_source("Davinci_DPO_Preference_Optimization.ipynb")
+    assert "PRETRAINING_RUN_MANIFEST=BASE_MODEL_DIR.parent" in sft
+    assert 'PRETRAINING_MANIFEST.get("tokenizer_sha256")!=sha256_file(TOKENIZER_MODEL)' in sft
+    assert "SFT_RUN_MANIFEST=BASE_SFT_DIR.parent" in dpo
+    assert "sft_run_manifest.get('tokenizer_sha256')!=sha256_file(TOKENIZER_MODEL)" in dpo
+    assert "SFT_RUN_MANIFEST_SHA256=sha256_file(SFT_RUN_MANIFEST)" in dpo
+
+
+def test_long_context_notebook_uses_exported_selected_tokenizer():
+    source = _notebook_source("Davinci_Long_Context_Curriculum_Evaluation.ipynb")
+    assert "davinci_sentencepiece.model" in source
+    assert "davinci_unigram_32000.model" not in source
