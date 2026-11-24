@@ -42,6 +42,26 @@ def tool_result_content(name: str, result: Any) -> str:
     return SPECIAL_TOKENS["tool_result"] + _strict_json({"name": name, "result": result})
 
 
+def _message_content(message: Mapping[str, Any], role: str) -> str:
+    """Normalize plain chat and recorded trajectory tool events to canonical payloads."""
+    if role == "assistant" and (message.get("type") == "tool_call" or "tool_call" in message):
+        call = message.get("tool_call", message)
+        if not isinstance(call, Mapping):
+            raise TypeError("assistant tool_call must be a mapping")
+        return tool_call_content(call.get("name"), call.get("arguments"))
+    content = message.get("content", "")
+    if not isinstance(content, str):
+        raise TypeError("message content must be a string")
+    if role == "tool" and message.get("name") and not content.startswith(SPECIAL_TOKENS["tool_result"]):
+        try:
+            result = json.loads(content, parse_constant=lambda value: (_ for _ in ()).throw(
+                ValueError(f"invalid JSON constant: {value}")
+            ))
+        except (json.JSONDecodeError, ValueError):
+            result = content
+        return tool_result_content(message["name"], result)
+    return content
+
 def serialize_messages(messages: Sequence[Mapping[str, Any]]) -> str:
     """Serialize each message once; the final assistant end marker ends the turn."""
     if not isinstance(messages, Sequence) or isinstance(messages, (str, bytes)) or not messages:
@@ -53,9 +73,10 @@ def serialize_messages(messages: Sequence[Mapping[str, Any]]) -> str:
         role = message.get("role")
         if role not in ("system", "user", "assistant", "tool"):
             raise ValueError(f"unsupported role at message {index}: {role!r}")
-        content = message.get("content", "")
-        if not isinstance(content, str):
-            raise TypeError(f"message {index} content must be a string")
+        try:
+            content = _message_content(message, role)
+        except (TypeError, ValueError) as exc:
+            raise type(exc)(f"message {index}: {exc}") from exc
         output.append(SPECIAL_TOKENS[role] + content + SPECIAL_TOKENS["end"])
     return "".join(output)
 
@@ -96,9 +117,10 @@ def build_masked_example(
         role = message.get("role")
         if role not in ("system", "user", "assistant", "tool"):
             raise ValueError(f"unsupported role at message {index}: {role!r}")
-        content = message.get("content", "")
-        if not isinstance(content, str):
-            raise TypeError(f"message {index} content must be a string")
+        try:
+            content = _message_content(message, role)
+        except (TypeError, ValueError) as exc:
+            raise type(exc)(f"message {index}: {exc}") from exc
         chunk = encode_text(tokenizer, SPECIAL_TOKENS[role] + content + SPECIAL_TOKENS["end"])
         input_ids.extend(chunk)
         labels.extend(chunk if role == "assistant" else [-100] * len(chunk))
