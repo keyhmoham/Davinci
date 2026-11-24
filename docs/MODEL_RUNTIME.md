@@ -4,7 +4,7 @@ The canonical short-sequence decoder lives in `src/davinci/model.py`. Notebooks 
 
 ## Components
 
-- RMSNorm, RoPE, grouped-query attention (GQA), SwiGLU, tied embeddings
+- RMSNorm, RoPE with configurable linear position interpolation (`rope_scaling_factor`, default 1.0), grouped-query attention (GQA), SwiGLU, tied embeddings
 - Hybrid schedule: every `global_every_n_layers` layer is global; other layers use exact causal sliding-window attention, evaluated in bounded query chunks
 - Global causal attention is evaluated in bounded query chunks, limiting the explicit mask to approximately `global_attention_chunk_size × sequence_length` while retaining exact full-context semantics
 - Optional activation/gradient checkpointing during training (`gradient_checkpointing=True`; disabled by default)
@@ -46,7 +46,7 @@ The tests cover finite forward/loss/gradients, checkpointed backward, local/glob
 
 ## Important limits
 
-This is a correctness-oriented reference, not a production training or serving kernel. Local attention avoids a full `[sequence, sequence]` mask by processing bounded query chunks, reducing local-attention temporary-mask memory to approximately `attention_chunk_size × (local_window + attention_chunk_size)`. Global attention also chunks queries, bounding its explicit mask to approximately `global_attention_chunk_size × sequence_length`; however, it still attends to all preceding keys and therefore retains quadratic compute. Chunking reduces peak mask memory, not global-attention arithmetic. This implementation is **not** suitable for 500K-token prefill/training. The current RoPE is standard fixed-frequency RoPE; no validated 500K positional-extension method is included. The training helpers provide a minimal single-process optimizer-step path, but there is no distributed training, optimizer-state resume orchestration, paged KV cache or a validated long-context positional-extension method here.
+This is a correctness-oriented reference, not a production training or serving kernel. Local attention avoids a full `[sequence, sequence]` mask by processing bounded query chunks, reducing local-attention temporary-mask memory to approximately `attention_chunk_size × (local_window + attention_chunk_size)`. Global attention also chunks queries, bounding its explicit mask to approximately `global_attention_chunk_size × sequence_length`; however, it still attends to all preceding keys and therefore retains quadratic compute. Chunking reduces peak mask memory, not global-attention arithmetic. This implementation is **not** suitable for 500K-token prefill/training. The default RoPE scaling factor is 1.0. A configurable linear position-interpolation factor is available for controlled experiments, but it is not a validated long-context recipe: it requires continued training and position-sensitive evaluation at every target length. No 500K positional-extension method is validated. The training helpers provide a minimal single-process optimizer-step path, but there is no distributed training, optimizer-state resume orchestration, or paged KV cache.
 
 The default architecture configuration is a project hypothesis. Freeze the tokenizer vocabulary size and positional strategy before training; re-run parameter-count and memory/throughput measurements after any config change.
 
