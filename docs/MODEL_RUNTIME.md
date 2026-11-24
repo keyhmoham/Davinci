@@ -6,7 +6,7 @@ The canonical short-sequence decoder lives in `src/davinci/model.py`. Notebooks 
 
 - RMSNorm, RoPE, grouped-query attention (GQA), SwiGLU, tied embeddings
 - Hybrid schedule: every `global_every_n_layers` layer is global; other layers use exact causal sliding-window attention, evaluated in bounded query chunks
-- Global full-sequence attention uses SDPA's causal mode without materializing a triangular mask
+- Global causal attention is evaluated in bounded query chunks, limiting the explicit mask to approximately `global_attention_chunk_size × sequence_length` while retaining exact full-context semantics
 - Optional activation/gradient checkpointing during training (`gradient_checkpointing=True`; disabled by default)
 - Full-sequence forward and one-token incremental decoding with per-layer KV caches
 - JSON config + PyTorch state-dict checkpoint save/load
@@ -42,11 +42,11 @@ From the repository root, with PyTorch and pytest installed:
 PYTHONPATH=. python -m pytest -q tests/test_model.py tests/test_train.py
 ```
 
-The tests cover finite forward/loss/gradients, checkpointed backward, chunk-size invariance, full-forward versus prefill/decode parity, tied embeddings, checkpoint round-trip, invalid loss inputs, causal loss, real-model optimizer updates with gradient accumulation, and evaluation-mode restoration. The tests have been added to the repository; they must still be run in the target Colab/runtime before this implementation is considered environment-verified.
+The tests cover finite forward/loss/gradients, checkpointed backward, local/global chunk-size invariance, full-forward versus prefill/decode parity, tied embeddings, checkpoint round-trip, invalid loss inputs, causal loss, real-model optimizer updates with gradient accumulation, and evaluation-mode restoration. The tests have been added to the repository; they must still be run in the target Colab/runtime before this implementation is considered environment-verified.
 
 ## Important limits
 
-This is a correctness-oriented reference, not a production training or serving kernel. Local attention avoids a full `[sequence, sequence]` mask by processing bounded query chunks, reducing local-attention temporary-mask memory to approximately `attention_chunk_size × (local_window + attention_chunk_size)`. Local-attention compute still scales with sequence length times window size. Global layers still perform full quadratic attention, so this hybrid implementation is **not** suitable for 500K-token prefill/training. The current RoPE is standard fixed-frequency RoPE; no validated 500K positional-extension method is included. The training helpers provide a minimal single-process optimizer-step path, but there is no distributed training, optimizer-state resume orchestration, paged KV cache or a validated long-context positional-extension method here.
+This is a correctness-oriented reference, not a production training or serving kernel. Local attention avoids a full `[sequence, sequence]` mask by processing bounded query chunks, reducing local-attention temporary-mask memory to approximately `attention_chunk_size × (local_window + attention_chunk_size)`. Global attention also chunks queries, bounding its explicit mask to approximately `global_attention_chunk_size × sequence_length`; however, it still attends to all preceding keys and therefore retains quadratic compute. Chunking reduces peak mask memory, not global-attention arithmetic. This implementation is **not** suitable for 500K-token prefill/training. The current RoPE is standard fixed-frequency RoPE; no validated 500K positional-extension method is included. The training helpers provide a minimal single-process optimizer-step path, but there is no distributed training, optimizer-state resume orchestration, paged KV cache or a validated long-context positional-extension method here.
 
 The default architecture configuration is a project hypothesis. Freeze the tokenizer vocabulary size and positional strategy before training; re-run parameter-count and memory/throughput measurements after any config change.
 
