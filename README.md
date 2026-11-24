@@ -1,5 +1,7 @@
 # Davinci
 
+See [MODEL_CARD.md](MODEL_CARD.md) for the current research status, [DATASET_CARD_TEMPLATE.md](DATASET_CARD_TEMPLATE.md) for dataset provenance, and [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md) before publishing weights.
+
 Davinci is an experimental Persian-first bilingual (Persian/English) language-model research project. The repository contains a proposed ~500M-parameter decoder, data/tokenizer/training notebooks, evaluation utilities, and explicitly experimental long-context retrieval prototypes.
 
 > **Status:** research implementation and training pipeline scaffolding. This repository does not contain a pretrained, instruction-tuned, or validated 500K-context model. Notebook cells and cloud training runs must be executed in the target environment before their outputs can be treated as experimental results.
