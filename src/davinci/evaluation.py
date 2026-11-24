@@ -86,3 +86,46 @@ def exact_match_metrics(predictions: Iterable[str], references: Iterable[str]) -
     correct = sum(normalize_persian_text(p).strip() == normalize_persian_text(r).strip()
                   for p, r in zip(pred_list, ref_list))
     return {"correct": correct, "total": len(pred_list), "accuracy": correct / len(pred_list)}
+
+
+def grouped_exact_match_metrics(
+    predictions: Iterable[str],
+    references: Iterable[str],
+    groups: Iterable[str],
+) -> dict[str, dict[str, float | int]]:
+    """Report normalized exact match overall by explicit language/task group.
+
+    Group labels are supplied by the benchmark manifest; this function never
+    infers a language from text. That avoids silently misclassifying code-mixed
+    Persian/English examples.
+    """
+    pred_list = list(predictions)
+    ref_list = list(references)
+    group_list = list(groups)
+    if not pred_list or len(pred_list) != len(ref_list) or len(pred_list) != len(group_list):
+        raise ValueError("predictions, references, and groups must have equal non-zero lengths")
+    if any(not isinstance(value, str) for value in pred_list + ref_list):
+        raise TypeError("predictions and references must contain strings")
+    if any(not isinstance(group, str) or not group.strip() for group in group_list):
+        raise ValueError("group labels must be non-empty strings")
+    correct_by_group: dict[str, int] = {}
+    total_by_group: dict[str, int] = {}
+    for prediction, reference, group in zip(pred_list, ref_list, group_list):
+        key = group.strip()
+        total_by_group[key] = total_by_group.get(key, 0) + 1
+        correct_by_group[key] = correct_by_group.get(key, 0) + int(
+            normalize_persian_text(prediction).strip()
+            == normalize_persian_text(reference).strip()
+        )
+    result: dict[str, dict[str, float | int]] = {
+        group: {
+            "correct": correct_by_group[group],
+            "total": total_by_group[group],
+            "accuracy": correct_by_group[group] / total_by_group[group],
+        }
+        for group in sorted(total_by_group)
+    }
+    total = len(pred_list)
+    correct = sum(correct_by_group.values())
+    result["overall"] = {"correct": correct, "total": total, "accuracy": correct / total}
+    return result
