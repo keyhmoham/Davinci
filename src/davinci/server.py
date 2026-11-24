@@ -27,6 +27,8 @@ except ImportError as exc:  # pragma: no cover - exercised in environments witho
 
 
 class ChatMessage(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     role: Literal["system", "user", "assistant", "tool"]
     content: str = Field(min_length=1, max_length=200_000)
 
@@ -87,6 +89,8 @@ def create_app(
     if tokenizer_vocab is not None and tokenizer_vocab != model.config.vocab_size:
         raise ValueError("tokenizer vocabulary size does not match model.config.vocab_size")
 
+    # Serving must remain in eval mode even when concurrent requests share the model.
+    model.eval()
     app = FastAPI(title="Davinci API", version="0.1.0")
     semaphore = threading.BoundedSemaphore(max_concurrent_requests)
 
