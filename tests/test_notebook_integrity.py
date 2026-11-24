@@ -187,6 +187,7 @@ def test_sft_and_dpo_notebooks_use_canonical_resumable_checkpoints():
     assert "DPO_CHECKPOINT_METADATA" in dpo
     assert "epoch_loss_sum" in sft
     assert "'batch_index':batch_index" in dpo
+    assert "os.replace(latest_tmp,OUTPUT_DIR/'latest_dpo_checkpoint.pt')" in dpo
 
 
 
