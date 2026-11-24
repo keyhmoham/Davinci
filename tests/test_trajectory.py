@@ -31,6 +31,15 @@ def test_valid_tool_trajectory_and_pairing():
     assert any("does not match" in issue for issue in validate_trajectory(broken))
 
 
+def test_nested_tool_call_schema_is_supported():
+    item = valid_trace()
+    item["messages"][1] = {
+        "role": "assistant",
+        "tool_call": {"name": "add", "arguments": {"a": 2, "b": 3}},
+    }
+    assert validate_trajectory(item) == []
+
+
 def test_rejects_missing_result_and_untrusted_flag():
     broken = valid_trace()
     broken["messages"].pop(2)
