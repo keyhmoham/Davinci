@@ -82,6 +82,10 @@ def create_app(
         raise TypeError("tokenizer must expose encode() and decode()")
     if not hasattr(model, "config") or not hasattr(model.config, "vocab_size"):
         raise TypeError("model must expose config.vocab_size")
+    tokenizer_vocab = (tokenizer.get_piece_size() if hasattr(tokenizer, "get_piece_size")
+                       else getattr(tokenizer, "vocab_size", None))
+    if tokenizer_vocab is not None and tokenizer_vocab != model.config.vocab_size:
+        raise ValueError("tokenizer vocabulary size does not match model.config.vocab_size")
 
     app = FastAPI(title="Davinci API", version="0.1.0")
     semaphore = threading.BoundedSemaphore(max_concurrent_requests)
@@ -111,6 +115,8 @@ def create_app(
             ids = ids.tolist()
         if not ids:
             raise HTTPException(status_code=400, detail="The encoded prompt is empty")
+        if any(not isinstance(token, int) or token < 0 or token >= model.config.vocab_size for token in ids):
+            raise HTTPException(status_code=400, detail="Tokenizer returned an out-of-vocabulary token ID")
         if len(ids) > max_input_tokens:
             raise HTTPException(status_code=413, detail=f"Prompt exceeds {max_input_tokens} tokens")
         if len(ids) + request.max_tokens > max_total_tokens:
@@ -133,6 +139,8 @@ def create_app(
         if not semaphore.acquire(blocking=False):
             raise HTTPException(status_code=429, detail="Server is at its configured concurrency limit")
         eos_id = tokenizer.eos_id() if hasattr(tokenizer, "eos_id") else None
+        if eos_id is not None and eos_id < 0:
+            eos_id = None
         if request.stream:
             completion_id = "chatcmpl-" + uuid.uuid4().hex
             created = int(time.time())
