@@ -42,7 +42,7 @@ From the repository root, with PyTorch and pytest installed:
 PYTHONPATH=. python -m pytest -q tests/test_model.py tests/test_train.py
 ```
 
-The tests cover finite forward/loss/gradients, checkpointed backward, local/global chunk-size invariance, full-forward versus prefill/decode parity, tied embeddings, checkpoint round-trip, invalid loss inputs, causal loss, real-model optimizer updates with gradient accumulation, and evaluation-mode restoration. The tests have been added to the repository; they must still be run in the target Colab/runtime before this implementation is considered environment-verified.
+The tests cover finite forward/loss/gradients, checkpointed backward, local/global chunk-size invariance, local/global chunked attention against an independent dense short-sequence reference, full-forward versus prefill/decode parity, tied embeddings, checkpoint round-trip, invalid loss inputs, causal loss, real-model optimizer updates with gradient accumulation, and evaluation-mode restoration. The tests have been added to the repository; they must still be run in the target Colab/runtime before this implementation is considered environment-verified.
 
 ## Important limits
 
