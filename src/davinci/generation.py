@@ -29,8 +29,9 @@ def _filter_logits(
 ) -> torch.Tensor:
     if top_k is not None:
         k = min(top_k, logits.shape[-1])
-        threshold = torch.topk(logits, k, dim=-1).values[..., -1, None]
-        logits = logits.masked_fill(logits < threshold, float("-inf"))
+        selected = torch.topk(logits, k, dim=-1).indices
+        keep = torch.zeros_like(logits, dtype=torch.bool).scatter(-1, selected, True)
+        logits = logits.masked_fill(~keep, float("-inf"))
     if top_p < 1.0:
         sorted_logits, sorted_indices = torch.sort(logits, descending=True, dim=-1)
         cumulative = torch.softmax(sorted_logits.float(), dim=-1).cumsum(dim=-1)
