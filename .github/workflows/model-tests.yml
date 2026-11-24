@@ -17,6 +17,7 @@ on:
       - "tests/test_train.py"
       - "tests/test_long_context.py"
       - "tests/test_hierarchical_retrieval.py"
+      - "tests/test_notebook_integrity.py"
       - ".github/workflows/model-tests.yml"
 
 jobs:
