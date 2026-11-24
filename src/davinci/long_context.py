@@ -82,6 +82,10 @@ class CompressedKVMemory:
             raise ValueError("query_positions must have shape [Q]")
         if query.device != self.recent_key.device or query_positions.device != query.device:
             raise ValueError("query, query_positions, and cached KV tensors must share a device")
+        if not query.is_floating_point():
+            raise ValueError("query must use a floating-point dtype")
+        if query_positions.dtype not in (torch.int8, torch.int16, torch.int32, torch.int64, torch.uint8):
+            raise ValueError("query_positions must use an integer dtype")
         if query.dtype != self.recent_key.dtype:
             raise ValueError("query and cached KV tensors must share a dtype")
         b, h, q_len, dim = query.shape
