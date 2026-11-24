@@ -21,6 +21,7 @@ Davinci is an experimental Persian-first bilingual (Persian/English) language-mo
 - `src/davinci/model.py`: canonical PyTorch decoder reference (RMSNorm, RoPE, GQA, SwiGLU, hybrid local/global causal attention, KV cache), with an exact parameter-count utility.
 - `configs/davinci_500m.json`: frozen baseline architecture configuration; `count_parameters` computes 508,960,000 parameters for this bias-free tied-embedding design.
 - `src/davinci/train.py`: minimal single-process training/evaluation helpers, accumulation, clipping, and optional CUDA AMP/GradScaler.
+- `src/davinci/checkpoint.py`: atomic trusted training-state checkpoint save/restore with optimizer/scheduler/scaler, RNG, optional gradients, metadata checks, and caller data cursors.
 - `src/davinci/generation.py`: cached autoregressive generation using canonical prefill/decode, with greedy, top-k, top-p, and EOS handling.
 - `src/davinci/tool_call.py`: strict JSON tool-call parsing and host-controlled allowlisted dispatch; generated code is never evaluated.
 - `src/davinci/data_audit.py`: deterministic Persian/bilingual normalization, quality diagnostics, exact deduplication, and hash-based dataset splitting.
