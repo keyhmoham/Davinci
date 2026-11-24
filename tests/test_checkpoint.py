@@ -116,3 +116,44 @@ def test_checkpoint_requires_matching_scheduler_and_scaler(tmp_path):
                 torch.optim.AdamW(make_model().parameters()), step_size=1
             ),
         )
+
+
+
+def test_mid_accumulation_checkpoint_matches_uninterrupted_next_optimizer_step(tmp_path):
+    from src.davinci.train import train_microbatch
+
+    torch.manual_seed(111)
+    model = make_model()
+    optimizer = torch.optim.AdamW(model.parameters(), lr=3e-4)
+    first = torch.randint(0, 29, (2, 8))
+    second = torch.randint(0, 29, (2, 8))
+    result = train_microbatch(
+        model, first, optimizer,
+        gradient_accumulation_steps=2, microbatch_index=0,
+    )
+    assert not result["optimizer_step"]
+    path = tmp_path / "mid-accumulation.pt"
+    save_training_checkpoint(
+        path, model, optimizer, step=0, micro_step=1,
+        data_state={"next_batch": 1},
+    )
+
+    uninterrupted = train_microbatch(
+        model, second, optimizer,
+        gradient_accumulation_steps=2, microbatch_index=1,
+    )
+    assert uninterrupted["optimizer_step"]
+    expected = {key: value.detach().clone() for key, value in model.state_dict().items()}
+
+    resumed = make_model()
+    resumed_optimizer = torch.optim.AdamW(resumed.parameters(), lr=3e-4)
+    state = load_training_checkpoint(path, resumed, resumed_optimizer)
+    assert state["micro_step"] == 1
+    assert state["data_state"]["next_batch"] == 1
+    resumed_result = train_microbatch(
+        resumed, second, resumed_optimizer,
+        gradient_accumulation_steps=2, microbatch_index=1,
+    )
+    assert resumed_result["optimizer_step"]
+    for key, value in expected.items():
+        torch.testing.assert_close(resumed.state_dict()[key], value, rtol=0, atol=0)
