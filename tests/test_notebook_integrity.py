@@ -187,3 +187,13 @@ def test_sft_and_dpo_notebooks_use_canonical_resumable_checkpoints():
     assert "DPO_CHECKPOINT_METADATA" in dpo
     assert "epoch_loss_sum" in sft
     assert "'batch_index':batch_index" in dpo
+
+
+
+def test_single_source_default_matches_multi_source_merge_inputs():
+    source = _notebook_source("Davinci_Persian_Dataset_Pipeline.ipynb")
+    merger = _notebook_source("Davinci_Corpus_Merge_Builder.ipynb")
+    assert 'selected_key = "naab"' in source
+    assert "'key':'naab'" in merger
+    assert "'key':'persian_blog'" in merger
+    assert 'jsonl_path = PROC / f"{selected_key}.jsonl"' in source
