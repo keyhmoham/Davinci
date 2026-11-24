@@ -65,6 +65,9 @@ def main() -> None:
     parser.add_argument("--device", choices=("cpu", "cuda"), default="cuda" if torch.cuda.is_available() else "cpu")
     args = parser.parse_args()
 
+    for name in ("tokens", "recent_window", "group_size", "top_k", "heads", "head_dim", "queries"):
+        if getattr(args, name) <= 0:
+            parser.error(f"--{name.replace(chr(95), chr(45))} must be positive")
     if args.tokens <= args.recent_window:
         parser.error("--tokens must exceed --recent-window")
     if args.tokens % args.group_size:
@@ -99,7 +102,6 @@ def main() -> None:
     synchronize(device)
     attend_ms = (time.perf_counter() - start) * 100
 
-    selected_groups = min(args.top_k, cache.memory_key.shape[2])
     recall = retrieval_recall(key, query, args.group_size, args.top_k, cache.memory_key.shape[2])
     full_kv_bytes = (key.numel() + value.numel()) * key.element_size()
     stored_kv_bytes = sum(
