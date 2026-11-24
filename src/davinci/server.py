@@ -21,7 +21,7 @@ from .sft import SPECIAL_TOKENS
 try:
     from fastapi import FastAPI, Header, HTTPException
     from fastapi.responses import JSONResponse, StreamingResponse
-    from pydantic import BaseModel, Field
+    from pydantic import BaseModel, Field, ConfigDict
 except ImportError as exc:  # pragma: no cover - exercised in environments without server extras
     raise ImportError("Install requirements-server.txt to use the Davinci HTTP server") from exc
 
@@ -32,8 +32,7 @@ class ChatMessage(BaseModel):
 
 
 class ChatCompletionRequest(BaseModel):
-    class Config:
-        extra = "forbid"
+    model_config = ConfigDict(extra="forbid")
 
     model: str = "davinci"
     messages: list[ChatMessage] = Field(min_length=1)
