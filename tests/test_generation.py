@@ -2,7 +2,7 @@ import pytest
 import torch
 
 from src.davinci import DavinciConfig, DavinciForCausalLM
-from src.davinci.generation import generate, sample_next_token
+from src.davinci.generation import _filter_logits, generate, sample_next_token
 
 
 def tiny_model():
@@ -76,3 +76,8 @@ def test_generation_rejects_invalid_arguments(kwargs):
     prompt = torch.randint(0, model.config.vocab_size, (1, 4))
     with pytest.raises(ValueError):
         generate(model, prompt, **kwargs)
+
+
+def test_top_k_keeps_exactly_k_tokens_even_when_logits_tie():
+    filtered = _filter_logits(torch.tensor([[1.0, 1.0, 0.0]]), top_k=1, top_p=1.0)
+    assert torch.isfinite(filtered).sum().item() == 1
