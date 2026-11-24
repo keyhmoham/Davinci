@@ -17,7 +17,7 @@ Do not treat this repository as a validated production model or as a model with 
 
 The proposed baseline uses 28 decoder layers, hidden size 1,280, 20 query heads, 4 key/value heads, head dimension 64, SwiGLU intermediate size 3,328, and a 32K vocabulary. The parameter-count utility reports 508,960,000 parameters for the bias-free tied-embedding configuration.
 
-The reference decoder combines exact sliding-window attention with periodic exact global-attention layers. Global layers remain quadratic in sequence length. The experimental compressed-memory and hierarchical-retrieval modules are not integrated into the canonical decoder and are approximate.
+The reference decoder combines exact sliding-window attention with periodic exact global-attention layers. Global layers remain quadratic in sequence length. A configurable linear RoPE position-interpolation factor is available for experiments, but no long-context scaling recipe is validated. The experimental compressed-memory and hierarchical-retrieval modules are not integrated into the canonical decoder and are approximate.
 
 ## Training status
 
