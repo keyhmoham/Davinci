@@ -2,8 +2,23 @@
 from __future__ import annotations
 
 from typing import Optional
+import math
 
 import torch
+
+
+
+def _validate_sampling_parameters(
+    temperature: float, top_k: Optional[int], top_p: float
+) -> None:
+    if not isinstance(temperature, (int, float)) or isinstance(temperature, bool) or not math.isfinite(temperature):
+        raise ValueError("temperature must be a finite number")
+    if top_k is not None and (
+        not isinstance(top_k, int) or isinstance(top_k, bool) or top_k <= 0
+    ):
+        raise ValueError("top_k must be a positive integer or None")
+    if not isinstance(top_p, (int, float)) or isinstance(top_p, bool) or not math.isfinite(top_p) or not 0.0 < top_p <= 1.0:
+        raise ValueError("top_p must be finite and in (0, 1]")
 
 
 def _filter_logits(
@@ -13,13 +28,9 @@ def _filter_logits(
     top_p: float = 1.0,
 ) -> torch.Tensor:
     if top_k is not None:
-        if not isinstance(top_k, int) or isinstance(top_k, bool) or top_k <= 0:
-            raise ValueError("top_k must be a positive integer or None")
         k = min(top_k, logits.shape[-1])
         threshold = torch.topk(logits, k, dim=-1).values[..., -1, None]
         logits = logits.masked_fill(logits < threshold, float("-inf"))
-    if not isinstance(top_p, (int, float)) or isinstance(top_p, bool) or not 0.0 < top_p <= 1.0:
-        raise ValueError("top_p must be in (0, 1]")
     if top_p < 1.0:
         sorted_logits, sorted_indices = torch.sort(logits, descending=True, dim=-1)
         cumulative = torch.softmax(sorted_logits.float(), dim=-1).cumsum(dim=-1)
@@ -42,10 +53,7 @@ def sample_next_token(
     """Sample one token from [B,V] logits; temperature <= 0 selects greedy."""
     if logits.ndim != 2 or logits.shape[-1] == 0:
         raise ValueError("logits must have non-empty [batch, vocabulary] shape")
-    if not isinstance(temperature, (int, float)) or isinstance(temperature, bool):
-        raise ValueError("temperature must be a finite number")
-    if not torch.isfinite(torch.tensor(float(temperature))):
-        raise ValueError("temperature must be a finite number")
+    _validate_sampling_parameters(temperature, top_k, top_p)
     if temperature <= 0:
         return logits.argmax(dim=-1, keepdim=True)
     filtered = _filter_logits(logits.float() / float(temperature), top_k=top_k, top_p=top_p)
@@ -75,6 +83,9 @@ def generate(
     """
     if not isinstance(input_ids, torch.Tensor) or input_ids.ndim != 2:
         raise ValueError("input_ids must be a [batch, sequence] tensor")
+    if input_ids.dtype not in (torch.int32, torch.int64):
+        raise ValueError("input_ids must use an integer token dtype")
+    _validate_sampling_parameters(temperature, top_k, top_p)
     if input_ids.shape[0] == 0 or input_ids.shape[1] == 0:
         raise ValueError("input_ids batch and sequence dimensions must be non-empty")
     if not isinstance(max_new_tokens, int) or isinstance(max_new_tokens, bool) or max_new_tokens < 0:
