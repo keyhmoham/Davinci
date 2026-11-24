@@ -74,6 +74,24 @@ class DavinciConfig:
         obj.validate()
         return obj
 
+
+def count_parameters(config: DavinciConfig) -> int:
+    """Return the exact parameter count implied by this bias-free decoder config."""
+    if isinstance(config, dict):
+        config = DavinciConfig.from_dict(config)
+    if not isinstance(config, DavinciConfig):
+        raise TypeError("config must be a DavinciConfig or config dictionary")
+    config.validate()
+    d, f = config.hidden_size, config.intermediate_size
+    kv = config.num_key_value_heads * config.head_dim
+    embedding = config.vocab_size * d
+    attention = d * d + 2 * d * kv + d * d
+    mlp = 3 * d * f
+    layer_norms = 2 * d
+    output_head = 0 if config.tie_word_embeddings else config.vocab_size * d
+    return embedding + config.num_hidden_layers * (attention + mlp + layer_norms) + d + output_head
+
+
 def apply_rope(x, positions, theta):
     d = x.shape[-1]
     inv = theta ** (-torch.arange(0, d, 2, device=x.device, dtype=torch.float32) / d)
