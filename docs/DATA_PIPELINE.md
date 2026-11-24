@@ -24,6 +24,10 @@ bucket = int(SHA256(f"{seed}:{content_sha256}")[:16], 16)
 
 The document is validation data when the bucket is below the configured fraction of the 64-bit bucket range; otherwise it is training data. The combined JSONL and the separate train/validation JSONL files are fingerprinted in the manifest. The tokenizer notebook reads only records marked `split=train` from this corpus. The pretraining notebook independently derives the same split from normalized content so that held-out validation documents are not used to train the tokenizer or model.
 
+## Multi-source merge
+
+`notebooks/Davinci_Corpus_Merge_Builder.ipynb` verifies every input manifest and artifact hash, requires each source to be explicitly approved for pretraining, performs cross-source exact deduplication with a disk-backed SQLite hash table, assigns deterministic document-level splits, and records source manifest hashes in the merged manifest. It is still a baseline: it does not perform near-duplicate detection, language identification, or full quality scoring.
+
 ## Python API
 
 ```python
