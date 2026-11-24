@@ -102,3 +102,41 @@ def test_chunked_global_attention_matches_single_chunk():
         a=m1(ids)["logits"]
         b=m2(ids)["logits"]
     torch.testing.assert_close(a,b,rtol=1e-5,atol=1e-5)
+
+
+def _dense_attention_reference(attn, x, positions):
+    """Independent short-sequence reference for exact causal attention."""
+    import torch.nn.functional as F
+    b,t,_=x.shape
+    q=attn.q_proj(x).view(b,t,attn.heads,attn.head_dim).transpose(1,2)
+    k=attn.k_proj(x).view(b,t,attn.kv_heads,attn.head_dim).transpose(1,2)
+    v=attn.v_proj(x).view(b,t,attn.kv_heads,attn.head_dim).transpose(1,2)
+    from src.davinci.model import apply_rope
+    q=apply_rope(q,positions,attn.c.rope_theta)
+    k=apply_rope(k,positions,attn.c.rope_theta)
+    if attn.groups != 1:
+        k=k.repeat_interleave(attn.groups,1)
+        v=v.repeat_interleave(attn.groups,1)
+    delta=positions[:,None]-positions[None,:]
+    allowed=delta>=0
+    if not attn.is_global:
+        allowed=allowed & (delta<attn.window)
+    y=F.scaled_dot_product_attention(q,k,v,attn_mask=allowed,
+        dropout_p=0.0,is_causal=False)
+    return attn.o_proj(y.transpose(1,2).contiguous().view(b,t,-1))
+
+
+def test_chunked_attention_matches_independent_dense_reference():
+    from src.davinci.model import GQAAttention
+    torch.manual_seed(23)
+    x=torch.randn(2,17,64)
+    positions=torch.arange(x.shape[1])
+    for layer_idx in (0,1):  # local layer and global layer
+        c=tiny()
+        c.attention_chunk_size=3
+        c.global_attention_chunk_size=4
+        attn=GQAAttention(c,layer_idx).eval()
+        with torch.no_grad():
+            actual=attn(x,positions)
+            expected=_dense_attention_reference(attn,x,positions)
+        torch.testing.assert_close(actual,expected,rtol=1e-5,atol=1e-5)
