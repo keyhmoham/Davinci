@@ -78,3 +78,28 @@ Both prototypes need representative retrieval evaluation and downstream task-qua
 ## Current verification boundary
 
 Tests are maintained in the repository and a small isolated CPU check has been run for the new hierarchical retrieval primitive. GitHub Actions runs currently fail before a runner is assigned (the reported job has `runner_id=0` and no steps), so the complete repository test suite has **not** been verified by CI. The Colab notebooks have not been executed end-to-end here. Treat all unexecuted notebook stages as instructions/code to run and validate, not completed training results.
+
+
+## Complete notebook index
+
+All notebooks are stored in `notebooks/` and can be opened in GitHub or Colab (the repository is private, so Colab must have access to your GitHub account).
+
+| Stage | Notebook |
+|---|---|
+| Architecture and sizing | [500M Architecture and Compute Planning](notebooks/Davinci_500M_Architecture_Compute_Planning.ipynb) |
+| Persian corpus preparation | [Persian Dataset Pipeline](notebooks/Davinci_Persian_Dataset_Pipeline.ipynb) |
+| Instruction and reasoning data | [SFT Reasoning and Agent Data](notebooks/Davinci_SFT_Reasoning_Agent_Data.ipynb) |
+| Tokenizer | [Tokenizer Training and Evaluation](notebooks/Davinci_Tokenizer_Training_Evaluation.ipynb) |
+| Decoder implementation | [PyTorch Model Implementation](notebooks/Davinci_PyTorch_Model_Implementation.ipynb) |
+| Pretraining | [Pretraining DataLoader and Training Engine](notebooks/Davinci_Pretraining_DataLoader_Training_Engine.ipynb) |
+| Training pilot | [Pretraining Optimization MiniRun](notebooks/Davinci_Pretraining_Optimization_MiniRun.ipynb) |
+| Long context | [Long Context Curriculum](notebooks/Davinci_Long_Context_Curriculum_Evaluation.ipynb) |
+| Attention and cache | [Efficient Attention and KV Cache](notebooks/Davinci_Efficient_Attention_KV_Cache.ipynb) |
+| Runtime | [Runtime Integration Benchmark](notebooks/Davinci_Runtime_Integration_Benchmark.ipynb) |
+| Evaluation | [Evaluation Harness and Baselines](notebooks/Davinci_Evaluation_Harness_Baselines.ipynb) |
+| Supervised fine-tuning | [SFT Chat Fine-tuning](notebooks/Davinci_SFT_Training_Chat_Finetuning.ipynb) |
+| Agent trajectories | [Agent Trajectory Dataset Builder](notebooks/Davinci_Agent_Trajectory_Dataset_Builder.ipynb) |
+| Inference | [Inference, Generation, and Export](notebooks/Davinci_Inference_Generation_Export.ipynb) |
+| Repository checks | [Repository Audit Checks](notebooks/Davinci_Repository_Audit_Checks.ipynb) |
+| End-to-end smoke test | [End-to-End Tiny Integration Test](notebooks/Davinci_End_to_End_Tiny_Integration_Test.ipynb) |
+| Long-context synthetic eval | [Long Context Curriculum Synthetic Evaluation](notebooks/Davinci_Long_Context_Curriculum_Synthetic_Evaluation.ipynb) |
