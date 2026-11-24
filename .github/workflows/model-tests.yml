@@ -6,30 +6,15 @@ on:
       - "src/davinci/**"
       - "configs/**"
       - "notebooks/**"
-      - "tests/test_model.py"
-      - "tests/test_train.py"
-      - "tests/test_long_context.py"
-      - "tests/test_hierarchical_retrieval.py"
-      - "tests/test_notebook_integrity.py"
-      - "tests/test_tool_call.py"
-      - "tests/test_generation.py"
-      - "tests/test_data_audit.py"\n      - "tests/test_data_pipeline.py"
-      - "tests/test_sft.py"
-      - "tests/test_trajectory.py"
+      - "tests/**"
       - "requirements-test.txt"
       - ".github/workflows/model-tests.yml"
   pull_request:
     paths:
       - "src/davinci/**"
+      - "configs/**"
       - "notebooks/**"
-      - "tests/test_model.py"
-      - "tests/test_train.py"
-      - "tests/test_long_context.py"
-      - "tests/test_hierarchical_retrieval.py"
-      - "tests/test_notebook_integrity.py"
-      - "tests/test_tool_call.py"
-      - "tests/test_generation.py"
-      - "tests/test_data_audit.py"
+      - "tests/**"
       - "requirements-test.txt"
       - ".github/workflows/model-tests.yml"
 
@@ -47,7 +32,7 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install torch==2.6.0 --index-url https://download.pytorch.org/whl/cpu --extra-index-url https://pypi.org/simple
           python -m pip install -r requirements-test.txt
-      - name: Run decoder and memory tests
+      - name: Run repository regression tests
         env:
           PYTHONPATH: .
-        run: python -m pytest -q tests/test_model.py tests/test_train.py tests/test_long_context.py tests/test_hierarchical_retrieval.py tests/test_notebook_integrity.py tests/test_tool_call.py tests/test_generation.py tests/test_data_audit.py tests/test_data_pipeline.py tests/test_sft.py tests/test_trajectory.py
+        run: python -m pytest -q tests
