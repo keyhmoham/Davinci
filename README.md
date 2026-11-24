@@ -78,6 +78,7 @@ The compressed-memory and hierarchical-retrieval modules are intentionally separ
 - [Hierarchical retrieval design and limitations](docs/HIERARCHICAL_RETRIEVAL_EXPERIMENT.md)
 - [Tool-call protocol and host-side security boundary](docs/TOOL_CALL_PROTOCOL.md)
 - [Dataset audit contracts and limitations](docs/DATA_AUDIT.md)
+- [Dataset provenance, manifest, and split contracts](docs/DATA_PIPELINE.md)
 - [Cached generation API and limitations](docs/GENERATION.md)
 
 Both prototypes need representative retrieval evaluation and downstream task-quality tests before integration. Their existence does not establish 500K-context capability.
