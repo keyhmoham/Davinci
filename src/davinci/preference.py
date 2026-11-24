@@ -56,6 +56,10 @@ def sequence_log_probs(logits: torch.Tensor, labels: torch.Tensor, *, attention_
         raise ValueError("logits must be [batch, sequence, vocab] and labels [batch, sequence]")
     if logits.shape[:2] != labels.shape:
         raise ValueError("logits and labels batch/sequence dimensions must match")
+    if labels.dtype not in (torch.uint8, torch.int8, torch.int16, torch.int32, torch.int64):
+        raise TypeError("labels must have an integer dtype")
+    if logits.device != labels.device:
+        raise ValueError("logits and labels must be on the same device")
     if logits.shape[1] < 2:
         raise ValueError("sequence length must be at least 2 for causal scoring")
     if not torch.is_floating_point(logits):
@@ -86,10 +90,12 @@ def dpo_loss(policy_chosen_logps: torch.Tensor, policy_rejected_logps: torch.Ten
     if any(not isinstance(value, torch.Tensor) for value in tensors):
         raise TypeError("all log-probability inputs must be torch tensors")
     shape = policy_chosen_logps.shape
-    if len(shape) != 1 or any(value.shape != shape for value in tensors[1:]):
+    if len(shape) != 1 or shape[0] == 0 or any(value.shape != shape for value in tensors[1:]):
         raise ValueError("all log-probability inputs must be one-dimensional with equal shape")
     if not all(torch.is_floating_point(value) for value in tensors):
         raise TypeError("log-probability tensors must have floating-point dtype")
+    if any(value.device != tensors[0].device for value in tensors[1:]):
+        raise ValueError("all log-probability tensors must be on the same device")
     if any(not bool(torch.isfinite(value).all()) for value in tensors):
         raise ValueError("log-probability tensors must contain only finite values")
     if not isinstance(beta, (int, float)) or isinstance(beta, bool) or not math.isfinite(beta) or beta <= 0:
