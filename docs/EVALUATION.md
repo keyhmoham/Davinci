@@ -28,3 +28,7 @@ Record:
 - contamination checks, uncertainty, and representative failure cases.
 
 Do not treat synthetic needle retrieval or training-set loss as a comprehensive benchmark. Long-context claims require natural long-document data, position-distributed evidence, multi-hop tasks, and repeated evaluation at each claimed context length.
+
+## Explicit group breakdowns
+
+`grouped_exact_match_metrics(predictions, references, groups)` reports exact match per benchmark-supplied group plus an overall aggregate. Group labels must be explicit (for example, `fa`, `en`, `code_mixed`, or a task name); the helper deliberately does not guess language from the answer text. Keep the group labels in the benchmark manifest and report sample counts alongside accuracy. Small groups should not be compared without uncertainty intervals or repeated evaluation.
