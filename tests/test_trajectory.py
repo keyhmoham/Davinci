@@ -31,6 +31,12 @@ def test_valid_tool_trajectory_and_pairing():
     assert any("does not match" in issue for issue in validate_trajectory(broken))
 
 
+def test_trajectory_tool_name_matches_runtime_name_grammar():
+    broken = valid_trace()
+    broken["messages"][1]["name"] = "1add"
+    issues = validate_trajectory(broken)
+    assert any("tool name is missing or invalid" in issue for issue in issues)
+
 def test_nested_tool_call_schema_is_supported():
     item = valid_trace()
     item["messages"][1] = {
