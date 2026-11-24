@@ -37,3 +37,6 @@ PYTHONPATH=. python experiments/benchmark_compressed_memory.py --device cpu --to
 ```
 
 It reports append and attention latency, KV storage ratio, and pooled-group retrieval recall against an exact max-token-score oracle over the historical groups. The recall measure is only a retrieval diagnostic: it does not measure answer quality, long-range reasoning, or end-to-end decoder speed. Run it on the target hardware and preserve the JSON output with the hardware/software configuration before comparing variants.
+
+
+A separate optional two-stage candidate-search experiment is documented in [HIERARCHICAL_RETRIEVAL_EXPERIMENT.md](HIERARCHICAL_RETRIEVAL_EXPERIMENT.md). It operates on compressed memory keys but is not integrated into this class; it must not be assumed to preserve retrieval recall or causal semantics automatically.
