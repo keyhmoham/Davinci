@@ -91,3 +91,17 @@ def test_append_rejects_empty_or_non_integer_inputs():
     x=torch.randn(1,1,2,4)
     with pytest.raises(ValueError,match="integer dtype"):
         cache.append(x,x,torch.tensor([0.0,1.0]))
+
+
+def test_config_rejects_non_integer_sizes():
+    with pytest.raises(ValueError,match="integer"):
+        CompressedKVMemory(CompressedMemoryConfig(recent_window=4.5))
+    with pytest.raises(ValueError,match="integer"):
+        CompressedKVMemory(CompressedMemoryConfig(recent_window=4,compression_group_size=2,retrieval_top_k=True))
+
+def test_attend_rejects_empty_query_sequence():
+    cache=CompressedKVMemory(CompressedMemoryConfig(recent_window=4,compression_group_size=2))
+    x=torch.randn(1,1,3,4)
+    cache.append(x,x,torch.arange(3))
+    with pytest.raises(ValueError,match="at least one query"):
+        cache.attend(torch.empty(1,1,0,4),torch.empty(0,dtype=torch.long))
