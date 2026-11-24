@@ -141,7 +141,7 @@ class GQAAttention(nn.Module):
                 end = min(start+chunk,t)
                 qpos = positions[start:end]
                 lower = qpos[0] - self.window + 1
-                first = int(torch.searchsorted(key_positions,lower,left=True).item())
+                first = int(torch.searchsorted(key_positions,lower,right=False).item())
                 last = int(torch.searchsorted(key_positions,qpos[-1],right=True).item())
                 kc,vc = k[:,:,first:last,:],v[:,:,first:last,:]
                 kp = key_positions[first:last]
