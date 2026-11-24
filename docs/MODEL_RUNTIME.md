@@ -76,3 +76,6 @@ for microbatch_index, token_batch in enumerate(batches):
 ```
 
 The helper expects the caller to zero gradients before starting an accumulation window and to ensure the final window is complete. It does not implement a full resumable training controller.
+
+
+Mixed-precision training note: `train_microbatch` distinguishes an accumulation boundary from a successful optimizer update. If CUDA GradScaler detects overflow and skips `optimizer.step()`, it returns `optimizer_step=False` and `optimizer_step_attempted=True`; schedulers and optimizer-step counters should advance only when `optimizer_step` is true.
