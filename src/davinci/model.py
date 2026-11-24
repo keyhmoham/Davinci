@@ -140,7 +140,7 @@ class GQAAttention(nn.Module):
                 for start in range(0,t,chunk):
                     end = min(start+chunk,t)
                     qpos = positions[start:end]
-                    last = int(torch.searchsorted(key_positions,qpos[-1],right=True).item())
+                    last = end  # positions are contiguous arange(T) in full-sequence forward
                     kp = key_positions[:last]
                     allowed = qpos[:,None] >= kp[None,:]
                     pieces.append(F.scaled_dot_product_attention(q[:,:,start:end,:],
@@ -155,9 +155,12 @@ class GQAAttention(nn.Module):
             for start in range(0,t,chunk):
                 end = min(start+chunk,t)
                 qpos = positions[start:end]
-                lower = qpos[0] - self.window + 1
-                first = int(torch.searchsorted(key_positions,lower,right=False).item())
-                last = int(torch.searchsorted(key_positions,qpos[-1],right=True).item())
+                if cache is None:
+                    first, last = max(0,start-self.window+1), end
+                else:
+                    lower = qpos[0] - self.window + 1
+                    first = int(torch.searchsorted(key_positions,lower,right=False).item())
+                    last = int(torch.searchsorted(key_positions,qpos[-1],right=True).item())
                 kc,vc = k[:,:,first:last,:],v[:,:,first:last,:]
                 kp = key_positions[first:last]
                 delta = qpos[:,None] - kp[None,:]
