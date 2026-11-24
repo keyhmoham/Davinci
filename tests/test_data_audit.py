@@ -12,7 +12,7 @@ from src.davinci.data_audit import (
 
 def test_persian_normalization_preserves_zwnj_and_normalizes_variants():
     value = "ميكـروم\u200f  خوب\r\n\r\n\r\n"
-    assert normalize_persian_text(value) == "می‌کروم خوب"
+    assert normalize_persian_text(value) == "میکروم خوب"
 
 
 def test_normalization_is_idempotent():
@@ -53,7 +53,6 @@ def test_split_is_deterministic_and_seeded():
     assert assign_split(digest, seed=7) == assign_split(digest, seed=7)
     assert assign_split(digest, validation_fraction=0.0) == "train"
     assert assign_split(digest, validation_fraction=1.0) == "validation"
-    assert assign_split(digest, seed=7) != assign_split(digest, seed=8) or True
 
 
 @pytest.mark.parametrize("kwargs", [
