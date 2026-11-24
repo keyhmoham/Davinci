@@ -109,7 +109,7 @@ def _validate_schema_definition(schema: Mapping[str, Any], path: str = "$schema"
     if unknown:
         raise ValueError(f"{path} uses unsupported schema keywords: {sorted(unknown)}")
     expected = schema.get("type")
-    if expected is not None and expected not in _ALLOWED_SCHEMA_TYPES:
+    if expected is not None and (not isinstance(expected, str) or expected not in _ALLOWED_SCHEMA_TYPES):
         raise ValueError(f"{path}.type is unsupported")
     properties = schema.get("properties", {})
     if not isinstance(properties, Mapping):
