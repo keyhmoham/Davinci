@@ -25,6 +25,7 @@ Davinci is an experimental Persian-first bilingual (Persian/English) language-mo
 - `src/davinci/data_pipeline.py`: strict dataset-manifest validation, explicit license-review gates, artifact SHA-256 verification, and streaming JSONL readers.
 - `src/davinci/sft.py`: canonical chat serialization, tool-trace payload formatting, assistant-only target masking, deterministic grouped splits, and SFT loss helpers.
 - `src/davinci/preference.py`: preference-pair validation, prompt-grouped deterministic splits, response-only sequence log-probabilities, and the DPO objective.
+- `src/davinci/server.py`: optional single-process OpenAI-compatible HTTP/SSE inference API with bearer authentication and request limits.
 - `src/davinci/trajectory.py`: strict agent-trajectory validation, tool-call/result pairing, exact-content deduplication, leakage-aware splitting, and JSONL export.
 - `src/davinci/long_context.py`: experimental compressed historical KV memory; approximate and not integrated into the canonical decoder.
 - `src/davinci/hierarchical_retrieval.py`: experimental two-stage candidate retrieval over compressed keys; approximate and not integrated into the canonical decoder.
@@ -83,6 +84,7 @@ The compressed-memory and hierarchical-retrieval modules are intentionally separ
 - [Dataset provenance, manifest, and split contracts](docs/DATA_PIPELINE.md)
 - [Cached generation API and limitations](docs/GENERATION.md)
 - [DPO preference data and optimization](docs/PREFERENCE_OPTIMIZATION.md)
+- [OpenAI-compatible serving](docs/SERVING.md)
 
 Both prototypes need representative retrieval evaluation and downstream task-quality tests before integration. Their existence does not establish 500K-context capability.
 
@@ -121,6 +123,7 @@ All notebooks are stored in `notebooks/` and can be opened in GitHub or Colab. T
 | Preference data | [Human Preference Dataset Builder](notebooks/Davinci_Preference_Dataset_Builder.ipynb) |
 | Preference optimization | [DPO Preference Optimization](notebooks/Davinci_DPO_Preference_Optimization.ipynb) |
 | Inference | [Inference, Generation, and Export](notebooks/Davinci_Inference_Generation_Export.ipynb) |
+| HTTP serving | [Serving documentation](docs/SERVING.md) |
 | Repository checks | [Repository Audit Checks](notebooks/Davinci_Repository_Audit_Checks.ipynb) |
 | End-to-end smoke test | [End-to-End Tiny Integration Test](notebooks/Davinci_End_to_End_Tiny_Integration_Test.ipynb) |
 | Long-context synthetic eval | [Long Context Curriculum Synthetic Evaluation](notebooks/Davinci_Long_Context_Curriculum_Synthetic_Evaluation.ipynb) |
