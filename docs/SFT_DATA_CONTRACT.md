@@ -15,7 +15,7 @@
 
 `split_examples` groups records by source/document identifiers, exact serialized content, and normalized user prompts. Different assistant answers to the same user prompt therefore remain in one partition. This is a conservative grouping rule; it does not detect paraphrased prompts or semantic leakage. Use immutable source IDs where available and run separate contamination checks.
 
-The SFT Colab notebook applies this split to the canonicalized full SFT input rather than trusting upstream row-level split labels. It records the validation fraction and split-strategy identifier in the run fingerprint so a resumed run cannot silently change the partition policy.
+The SFT Colab notebook applies this split to the canonicalized full SFT input rather than trusting upstream row-level split labels. It records the validation fraction, split-strategy identifier, and SHA-256 hashes of sorted train/validation example IDs in the run fingerprint and exported run manifest so the partition can be audited and a resumed run cannot silently change the policy.
 
 ## Validation
 
