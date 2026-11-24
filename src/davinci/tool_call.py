@@ -122,6 +122,8 @@ def _validate_schema_definition(schema: Mapping[str, Any], path: str = "$schema"
     if (not isinstance(required, list) or any(not isinstance(x, str) for x in required)
             or len(required) != len(set(required))):
         raise ValueError(f"{path}.required must be a unique list of strings")
+    if any(key not in properties for key in required):
+        raise ValueError(f"{path}.required entries must be declared in properties")
     additional = schema.get("additionalProperties", False)
     if not isinstance(additional, bool):
         _validate_schema_definition(additional, f"{path}.additionalProperties")
