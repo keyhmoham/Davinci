@@ -82,3 +82,27 @@ def test_non_json_tool_results_are_rejected():
     registry.register("bad_result", "Returns an object", {"type": "object"}, lambda: object())
     with pytest.raises(ToolExecutionError, match="JSON-serializable"):
         registry.execute_json('{"name":"bad_result","arguments":{}}')
+
+
+def test_parser_rejects_non_standard_json_constants():
+    with pytest.raises(ToolCallError, match="Non-standard JSON"):
+        parse_tool_call('{"name":"add","arguments":{"left":NaN,"right":1}}')
+
+
+def test_registry_rejects_unsupported_schema_keywords():
+    registry = ToolRegistry()
+    with pytest.raises(ValueError, match="unsupported schema keywords"):
+        registry.register(
+            "unsafe_schema", "Bad schema",
+            {"type": "object", "properties": {}, "oneOf": []},
+            lambda: None,
+        )
+
+
+def test_async_tool_is_rejected_by_sync_registry():
+    async def async_result():
+        return {"ok": True}
+    registry = ToolRegistry()
+    registry.register("async_tool", "Async tool", {"type": "object"}, async_result)
+    with pytest.raises(ToolExecutionError, match="Async tools are not supported"):
+        registry.execute('{"name":"async_tool","arguments":{}}')
