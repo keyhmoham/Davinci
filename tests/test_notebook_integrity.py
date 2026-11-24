@@ -154,3 +154,13 @@ def test_long_context_notebook_uses_exported_selected_tokenizer():
     source = _notebook_source("Davinci_Long_Context_Curriculum_Evaluation.ipynb")
     assert "davinci_sentencepiece.model" in source
     assert "davinci_unigram_32000.model" not in source
+
+
+def test_multi_source_corpus_merge_is_provenance_gated_and_disk_deduplicated():
+    source = _notebook_source("Davinci_Corpus_Merge_Builder.ipynb")
+    assert "validate_dataset_manifest(manifest,intended_purpose='pretraining')" in source
+    assert "verify_dataset_artifact(data_path,manifest,hash_field='combined_jsonl_sha256')" in source
+    assert "sqlite3.connect(SEEN_DB)" in source
+    assert "CREATE TABLE seen (digest TEXT PRIMARY KEY)" in source
+    assert "license_approved_for_use':all(" in source
+    assert "combined_jsonl_sha256':sha256_file(OUTPUT)" in source
