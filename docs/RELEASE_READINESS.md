@@ -10,6 +10,8 @@ This checklist distinguishes repository engineering from an actually trained/rel
 - [x] SentencePiece tokenizer training/evaluation notebook with train-split-only input policy and special-token checks.
 - [x] Atomic trusted training-state checkpoints, including optimizer/scheduler/scaler, RNG, optional gradients, metadata fingerprints, and caller data cursors.
 - [x] Resumable pretraining, SFT, and DPO Colab workflows.
+- [x] Prompt/source-grouped SFT splits with exported split hashes; structured tool traces preserve trust labels in context and remain masked from assistant loss.
+- [x] DPO notebook preserves prompt context during response truncation and rejects empty response-target masks.
 - [x] OpenAI-style single-process HTTP serving reference with streaming, bearer authentication, request limits, and strict request schemas.
 - [x] CPU regression suite and notebook syntax/integrity checks.
 
