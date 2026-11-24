@@ -239,3 +239,11 @@ def test_sft_notebook_applies_prompt_grouped_split_before_training():
     assert '"split_strategy":"normalized_prompt_source_document_exact_content"' in source
     assert 'item["split"]=="train"' not in source
     assert 'item["split"]=="validation"' not in source
+
+
+def test_dpo_notebook_preserves_prompt_context_and_rejects_empty_response_masks():
+    source = _notebook_source("Davinci_DPO_Preference_Optimization.ipynb")
+    assert "prompt_budget=MAX_LENGTH-len(response_ids)" in source
+    assert "retained_prompt=prompt_ids[-prompt_budget:]" in source
+    assert "Every preference response must contain at least one scored token." in source
+    assert "target_start=max(0,len(ids)-len(response_ids))" not in source
