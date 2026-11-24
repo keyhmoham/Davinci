@@ -1,0 +1,193 @@
+"""Canonical Davinci decoder reference. Dense masks are for short tests, not 500K context."""
+from __future__ import annotations
+from dataclasses import asdict, dataclass
+from typing import Optional
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
+@dataclass
+class DavinciConfig:
+    vocab_size: int = 32000
+    hidden_size: int = 1280
+    num_hidden_layers: int = 28
+    num_attention_heads: int = 20
+    num_key_value_heads: int = 4
+    head_dim: int = 64
+    intermediate_size: int = 3328
+    norm_eps: float = 1e-5
+    rope_theta: float = 10000.0
+    local_window: int = 4096
+    global_every_n_layers: int = 4
+    dropout: float = 0.0
+    tie_word_embeddings: bool = True
+
+    def validate(self):
+        assert self.vocab_size > 0 and self.hidden_size > 0
+        assert self.num_hidden_layers > 0 and self.intermediate_size > 0
+        assert self.hidden_size == self.num_attention_heads * self.head_dim
+        assert self.num_attention_heads % self.num_key_value_heads == 0
+        assert self.num_key_value_heads > 0 and self.head_dim % 2 == 0
+        assert self.local_window > 0 and self.global_every_n_layers > 0
+        assert 0.0 <= self.dropout < 1.0
+
+    @classmethod
+    def from_dict(cls, values):
+        obj = cls(**values)
+        obj.validate()
+        return obj
+
+def apply_rope(x, positions, theta):
+    d = x.shape[-1]
+    inv = theta ** (-torch.arange(0, d, 2, device=x.device, dtype=torch.float32) / d)
+    angles = torch.outer(positions.float(), inv)
+    angles = torch.cat((angles, angles), dim=-1)
+    cos, sin = angles.cos().to(x.dtype)[None,None], angles.sin().to(x.dtype)[None,None]
+    half = d // 2
+    rotated = torch.cat((-x[..., half:], x[..., :half]), dim=-1)
+    return x * cos + rotated * sin
+
+class RMSNorm(nn.Module):
+    def __init__(self, dim, eps):
+        super().__init__()
+        self.weight = nn.Parameter(torch.ones(dim))
+        self.eps = eps
+    def forward(self, x):
+        y = x.float() * torch.rsqrt(x.float().pow(2).mean(-1, keepdim=True) + self.eps)
+        return (y * self.weight.float()).to(x.dtype)
+
+class KVCache:
+    """One layer's KV cache; local caches are bounded during incremental decode."""
+    def __init__(self, window: Optional[int]):
+        self.window, self.key, self.value, self.positions = window, None, None, None
+    def append(self, key, value, positions, trim=True):
+        if self.key is None:
+            self.key, self.value, self.positions = key, value, positions
+        else:
+            self.key = torch.cat((self.key, key), dim=2)
+            self.value = torch.cat((self.value, value), dim=2)
+            self.positions = torch.cat((self.positions, positions), dim=0)
+        # During multi-token prefill, retain all keys until attention is computed:
+        # deeper-layer hidden states for early prompt tokens are still required.
+        if trim and self.window is not None and self.key.shape[2] > self.window:
+            self.key, self.value = self.key[:,:,-self.window:,:], self.value[:,:,-self.window:,:]
+            self.positions = self.positions[-self.window:]
+        return self.key, self.value, self.positions
+
+class GQAAttention(nn.Module):
+    def __init__(self, c, layer_idx):
+        super().__init__()
+        self.c = c
+        self.heads, self.kv_heads = c.num_attention_heads, c.num_key_value_heads
+        self.groups, self.head_dim = self.heads // self.kv_heads, c.head_dim
+        self.is_global = (layer_idx + 1) % c.global_every_n_layers == 0
+        self.window = c.local_window
+        d = c.hidden_size
+        self.q_proj = nn.Linear(d, self.heads*self.head_dim, bias=False)
+        self.k_proj = nn.Linear(d, self.kv_heads*self.head_dim, bias=False)
+        self.v_proj = nn.Linear(d, self.kv_heads*self.head_dim, bias=False)
+        self.o_proj = nn.Linear(self.heads*self.head_dim, d, bias=False)
+    def forward(self, x, positions, cache=None):
+        b,t,_ = x.shape
+        q = self.q_proj(x).view(b,t,self.heads,self.head_dim).transpose(1,2)
+        k = self.k_proj(x).view(b,t,self.kv_heads,self.head_dim).transpose(1,2)
+        v = self.v_proj(x).view(b,t,self.kv_heads,self.head_dim).transpose(1,2)
+        q, k = apply_rope(q, positions, self.c.rope_theta), apply_rope(k, positions, self.c.rope_theta)
+        if cache is not None:
+            expected_window = None if self.is_global else self.window
+            if cache.window != expected_window:
+                raise ValueError("Cache type does not match attention layer")
+            k, v, key_positions = cache.append(k, v, positions, trim=(t == 1))
+        else:
+            key_positions = positions
+        if self.groups != 1:
+            k, v = k.repeat_interleave(self.groups,1), v.repeat_interleave(self.groups,1)
+        delta = positions[:,None] - key_positions[None,:]
+        allowed = delta >= 0
+        if not self.is_global:
+            allowed = allowed & (delta < self.window)
+        y = F.scaled_dot_product_attention(q,k,v,attn_mask=allowed,
+                dropout_p=self.c.dropout if self.training else 0.0, is_causal=False)
+        return self.o_proj(y.transpose(1,2).contiguous().view(b,t,-1))
+
+class SwiGLU(nn.Module):
+    def __init__(self, d, f):
+        super().__init__()
+        self.gate, self.up, self.down = nn.Linear(d,f,bias=False), nn.Linear(d,f,bias=False), nn.Linear(f,d,bias=False)
+    def forward(self,x):
+        return self.down(F.silu(self.gate(x))*self.up(x))
+
+class DecoderBlock(nn.Module):
+    def __init__(self,c,i):
+        super().__init__()
+        self.attn_norm, self.attn = RMSNorm(c.hidden_size,c.norm_eps), GQAAttention(c,i)
+        self.mlp_norm, self.mlp = RMSNorm(c.hidden_size,c.norm_eps), SwiGLU(c.hidden_size,c.intermediate_size)
+    def forward(self,x,positions,cache=None):
+        x = x + self.attn(self.attn_norm(x),positions,cache)
+        return x + self.mlp(self.mlp_norm(x))
+
+class DavinciForCausalLM(nn.Module):
+    def __init__(self, config):
+        super().__init__()
+        self.config = DavinciConfig.from_dict(config) if isinstance(config,dict) else config
+        self.config.validate()
+        c = self.config
+        self.embed_tokens = nn.Embedding(c.vocab_size,c.hidden_size)
+        self.layers = nn.ModuleList([DecoderBlock(c,i) for i in range(c.num_hidden_layers)])
+        self.final_norm = RMSNorm(c.hidden_size,c.norm_eps)
+        self.lm_head = nn.Linear(c.hidden_size,c.vocab_size,bias=False)
+        if c.tie_word_embeddings:
+            self.lm_head.weight = self.embed_tokens.weight
+        self.apply(self._init_weights)
+    @staticmethod
+    def _init_weights(m):
+        if isinstance(m,(nn.Linear,nn.Embedding)):
+            nn.init.normal_(m.weight,mean=0.0,std=0.02)
+    def make_caches(self):
+        return [KVCache(None if b.attn.is_global else self.config.local_window) for b in self.layers]
+    def forward(self,input_ids,labels=None):
+        if input_ids.ndim != 2:
+            raise ValueError("input_ids must have shape [batch, sequence]")
+        pos = torch.arange(input_ids.shape[1],device=input_ids.device)
+        x = self.embed_tokens(input_ids)
+        for block in self.layers:
+            x = block(x,pos)
+        logits = self.lm_head(self.final_norm(x))
+        loss = None
+        if labels is not None:
+            if labels.shape != input_ids.shape:
+                raise ValueError("labels must match input_ids shape")
+            loss = F.cross_entropy(logits[:,:-1,:].contiguous().view(-1,logits.shape[-1]),
+                                   labels[:,1:].contiguous().view(-1),ignore_index=-100)
+        return {"logits":logits,"loss":loss}
+    @torch.no_grad()
+    def prefill(self,input_ids):
+        caches, pos = self.make_caches(), torch.arange(input_ids.shape[1],device=input_ids.device)
+        x = self.embed_tokens(input_ids)
+        for block,cache in zip(self.layers,caches):
+            x = block(x,pos,cache)
+        return self.lm_head(self.final_norm(x[:,-1:,:])),caches
+    @torch.no_grad()
+    def decode(self,input_ids,position,caches):
+        if input_ids.ndim != 2 or input_ids.shape[1] != 1:
+            raise ValueError("decode accepts one token per call")
+        pos = torch.tensor([position],device=input_ids.device)
+        x = self.embed_tokens(input_ids)
+        for block,cache in zip(self.layers,caches):
+            x = block(x,pos,cache)
+        return self.lm_head(self.final_norm(x))
+    def save_pretrained(self,directory):
+        import json
+        from pathlib import Path
+        p=Path(directory); p.mkdir(parents=True,exist_ok=True)
+        (p/"config.json").write_text(json.dumps(asdict(self.config),indent=2),encoding="utf-8")
+        torch.save(self.state_dict(),p/"model.pt")
+    @classmethod
+    def from_pretrained(cls,directory,map_location="cpu"):
+        import json
+        from pathlib import Path
+        p=Path(directory)
+        c=DavinciConfig.from_dict(json.loads((p/"config.json").read_text(encoding="utf-8")))
+        model=cls(c)
+        model.load_state_dict(torch.load(p/"model.pt",map_location=map_location,weights_only=True))
+        return model
