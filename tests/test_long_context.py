@@ -81,3 +81,13 @@ def test_query_before_all_cached_tokens_returns_zero():
     query=torch.randn(1,1,1,4)
     out=cache.attend(query,torch.tensor([-1]))
     assert torch.equal(out,torch.zeros_like(out))
+
+
+def test_append_rejects_empty_or_non_integer_inputs():
+    cache=CompressedKVMemory(CompressedMemoryConfig(recent_window=4,compression_group_size=2))
+    empty=torch.empty(1,1,0,4)
+    with pytest.raises(ValueError,match="at least one"):
+        cache.append(empty,empty,torch.empty(0,dtype=torch.long))
+    x=torch.randn(1,1,2,4)
+    with pytest.raises(ValueError,match="integer dtype"):
+        cache.append(x,x,torch.tensor([0.0,1.0]))
