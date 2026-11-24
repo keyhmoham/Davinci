@@ -87,7 +87,9 @@ def quality_reasons(
         reasons.append("too_short")
     if stats["char_count"] > max_chars:
         reasons.append("too_long")
-    if stats["alpha_char_count"] and (
+    if stats["alpha_char_count"] == 0 and stats["char_count"] > 0:
+        reasons.append("low_alphabetic_ratio")
+    elif stats["alpha_char_count"] and (
         stats["alpha_char_count"] / max(stats["char_count"], 1) < min_alpha_ratio
     ):
         reasons.append("low_alphabetic_ratio")
