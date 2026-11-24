@@ -26,6 +26,8 @@ on:
       - "tests/test_notebook_integrity.py"
       - "tests/test_tool_call.py"
       - "tests/test_generation.py"
+      - "tests/test_data_audit.py"
+      - "requirements-test.txt"
       - ".github/workflows/model-tests.yml"
 
 jobs:
