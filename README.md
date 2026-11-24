@@ -23,6 +23,7 @@ Davinci is an experimental Persian-first bilingual (Persian/English) language-mo
 - `src/davinci/tool_call.py`: strict JSON tool-call parsing and host-controlled allowlisted dispatch; generated code is never evaluated.
 - `src/davinci/data_audit.py`: deterministic Persian/bilingual normalization, quality diagnostics, exact deduplication, and hash-based dataset splitting.
 - `src/davinci/sft.py`: canonical chat serialization, tool-trace payload formatting, assistant-only target masking, deterministic grouped splits, and SFT loss helpers.
+- `src/davinci/trajectory.py`: strict agent-trajectory validation, tool-call/result pairing, exact-content deduplication, leakage-aware splitting, and JSONL export.
 - `src/davinci/long_context.py`: experimental compressed historical KV memory; approximate and not integrated into the canonical decoder.
 - `src/davinci/hierarchical_retrieval.py`: experimental two-stage candidate retrieval over compressed keys; approximate and not integrated into the canonical decoder.
 - `notebooks/`: data, tokenizer, architecture, training, evaluation, and integration workflows.
@@ -50,6 +51,7 @@ PYTHONPATH=. python -m pytest -q \
   tests/test_generation.py \
   tests/test_data_audit.py \
   tests/test_sft.py \
+  tests/test_trajectory.py \
   tests/test_notebook_integrity.py
 ```
 
