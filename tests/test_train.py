@@ -21,9 +21,11 @@ def test_accumulated_real_model_training_updates_weights():
     ids=torch.randint(0,41,(2,9))
     before=model.embed_tokens.weight.detach().clone()
     first=train_microbatch(model,ids,optimizer,gradient_accumulation_steps=2,microbatch_index=0)
+    assert first["optimizer_step_attempted"]
     assert not first["optimizer_step"]
     assert torch.equal(before,model.embed_tokens.weight)
     second=train_microbatch(model,ids,optimizer,gradient_accumulation_steps=2,microbatch_index=1)
+    assert second["optimizer_step_attempted"]
     assert second["optimizer_step"]
     assert not torch.equal(before,model.embed_tokens.weight)
 
