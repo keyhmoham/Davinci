@@ -1,5 +1,7 @@
 # Davinci model card (research status)
 
+For a full release-specific card with training provenance, benchmark tables, and limitations, start from [MODEL_CARD_TEMPLATE.md](MODEL_CARD_TEMPLATE.md) and fill it only with verified run artifacts.
+
 ## Model status
 
 **Status:** research implementation; no pretrained or instruction-tuned model weights are released by this repository at this time.
