@@ -130,3 +130,11 @@ def test_sft_split_is_shared_by_tokenizer_and_finetuning():
     assert '"split_field":"split","allowed_splits":["train"]' in tokenizer
     assert 'item["split"] not in {"train","validation"}' in trainer
     assert 'item for item in examples if item["split"]=="validation"' in trainer
+
+
+def test_pretraining_uses_audited_manifest_split_labels():
+    corpus = _notebook_source("Davinci_Persian_Dataset_Pipeline.ipynb")
+    pretraining = _notebook_source("Davinci_Pretraining_DataLoader_Training_Engine.ipynb")
+    assert "\\u2066-\\u2069" in corpus
+    assert 'VALIDATION_FRACTION=float(manifest_validation_fraction)' in pretraining
+    assert 'obj.get("split")==self.split' in pretraining
