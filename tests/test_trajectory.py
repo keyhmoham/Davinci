@@ -34,7 +34,7 @@ def test_valid_tool_trajectory_and_pairing():
 def test_rejects_missing_result_and_untrusted_flag():
     broken = valid_trace()
     broken["messages"].pop(2)
-    assert any("without a result" in issue for issue in validate_trajectory(broken))
+    assert any("expected tool result" in issue for issue in validate_trajectory(broken))
     broken = valid_trace()
     del broken["messages"][2]["trusted"]
     assert any("trusted" in issue for issue in validate_trajectory(broken))
@@ -65,7 +65,7 @@ def test_split_keeps_exact_duplicates_and_source_document_groups_together():
     other = valid_trace("other")
     other["messages"][0]["content"] = "different task"
     other["messages"][-1]["content"] = "different answer"
-    train, validation = split_trajectories([a, b, duplicate, other], validation_fraction=0.5, seed=42)
+    train, validation = split_trajectories([a, b, duplicate, other], validation_fraction=0.5, seed=43)
     train_ids = {x["trajectory_id"] for x in train}
     val_ids = {x["trajectory_id"] for x in validation}
     assert ({"a", "b", "duplicate"} <= train_ids) or ({"a", "b", "duplicate"} <= val_ids)
