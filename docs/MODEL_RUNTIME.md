@@ -13,7 +13,7 @@ The canonical short-sequence decoder lives in `src/davinci/model.py`. Notebooks 
 
 ```python
 import torch
-from src.davinci import DavinciConfig, DavinciForCausalLM
+from src.davinci import DavinciConfig, DavinciForCausalLM, train_microbatch
 
 config = DavinciConfig(
     vocab_size=32000,
@@ -37,13 +37,40 @@ print(result["loss"])
 From the repository root, with PyTorch and pytest installed:
 
 ```bash
-PYTHONPATH=. python -m pytest -q tests/test_model.py
+PYTHONPATH=. python -m pytest -q tests/test_model.py tests/test_train.py
 ```
 
-The tests cover finite forward/loss/gradients, full-forward versus prefill/decode parity, tied embeddings, and checkpoint round-trip. The tests have been added to the repository; they must still be run in the target Colab/runtime before this implementation is considered environment-verified.
+The tests cover finite forward/loss/gradients, full-forward versus prefill/decode parity, tied embeddings, checkpoint round-trip, causal loss, real-model optimizer updates with gradient accumulation, and evaluation-mode restoration. The tests have been added to the repository; they must still be run in the target Colab/runtime before this implementation is considered environment-verified.
 
 ## Important limits
 
-This is a correctness-oriented reference, not a production training or serving kernel. Its attention mask is dense and has quadratic sequence-length memory/work characteristics. It is **not** suitable for 500K-token prefill/training. The current RoPE is standard fixed-frequency RoPE; no validated 500K positional-extension method is included. There is no packed-sequence training, distributed training, optimizer/scheduler, gradient checkpointing integration, paged KV cache, or optimized block-sparse attention here.
+This is a correctness-oriented reference, not a production training or serving kernel. Its attention mask is dense and has quadratic sequence-length memory/work characteristics. It is **not** suitable for 500K-token prefill/training. The current RoPE is standard fixed-frequency RoPE; no validated 500K positional-extension method is included. The training helpers provide a minimal single-process optimizer-step path, but there is no distributed training, optimizer-state resume orchestration, architecture-integrated gradient checkpointing, paged KV cache, or optimized block-sparse attention here.
 
 The default architecture configuration is a project hypothesis. Freeze the tokenizer vocabulary size and positional strategy before training; re-run parameter-count and memory/throughput measurements after any config change.
+
+
+## Training helper API
+
+`src/davinci/train.py` provides:
+
+- `causal_lm_loss(logits, input_ids)`: next-token cross-entropy with an optional ignored-label index.
+- `train_microbatch(...)`: one backward pass, optional CUDA autocast/scaler, gradient accumulation, clipping, and optimizer stepping at the end of an accumulation window.
+- `evaluate_loss(...)`: bounded evaluation that restores the model's previous train/eval mode.
+
+Example:
+
+```python
+optimizer = torch.optim.AdamW(model.parameters(), lr=3e-4)
+optimizer.zero_grad(set_to_none=True)
+for microbatch_index, token_batch in enumerate(batches):
+    result = train_microbatch(
+        model, token_batch, optimizer,
+        gradient_accumulation_steps=4,
+        microbatch_index=microbatch_index,
+        amp_dtype=torch.bfloat16 if torch.cuda.is_available() else None,
+    )
+    if result["optimizer_step"]:
+        print("loss", float(result["loss"]))
+```
+
+The helper expects the caller to zero gradients before starting an accumulation window and to ensure the final window is complete. It does not implement a full resumable training controller.
