@@ -103,3 +103,20 @@ def test_tokenizer_uses_only_training_partition_of_split_corpus():
     source = _notebook_source("Davinci_Tokenizer_Training_Evaluation.ipynb")
     assert '"allowed_splits":["train"]' in source
     assert 'obj.get(split_field) not in allowed_splits' in source
+
+
+def test_preference_builder_keeps_license_approval_opt_in():
+    source = _notebook_source("Davinci_Preference_Dataset_Builder.ipynb")
+    assert "LICENSE_REVIEWED=False" in source
+    assert "LICENSE_APPROVED_FOR_USE=False" in source
+    assert "'purpose':'preference'" in source
+    assert "'preference_jsonl_sha256':sha256_file(OUTPUT_JSONL)" in source
+
+
+def test_dpo_notebook_checks_manifest_and_uses_frozen_reference():
+    source = _notebook_source("Davinci_DPO_Preference_Optimization.ipynb")
+    assert "validate_dataset_manifest(manifest,intended_purpose='preference')" in source
+    assert "verify_dataset_artifact(PREFERENCE_JSONL,manifest" in source
+    assert "reference.eval()" in source
+    assert "parameter.requires_grad_(False)" in source
+    assert "sequence_log_probs" in source
