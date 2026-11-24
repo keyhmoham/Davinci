@@ -103,7 +103,7 @@ def create_app(
                                 headers={"WWW-Authenticate": "Bearer"})
 
     def prepare(request: ChatCompletionRequest) -> tuple[torch.Tensor, int]:
-        if request.model not in {model_name, "davinci"}:
+        if request.model != model_name:
             raise HTTPException(status_code=404, detail=f"Unknown model: {request.model}")
         if request.max_tokens > max_new_tokens:
             raise HTTPException(status_code=400, detail=f"max_tokens exceeds server limit {max_new_tokens}")
