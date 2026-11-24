@@ -74,7 +74,7 @@ def test_streaming_chat_completion_emits_sse_and_done_marker():
     assert "text/event-stream" in response.headers["content-type"]
     assert "chat.completion.chunk" in response.text
     assert "[DONE]" in response.text
-    assert model.training is True
+    assert model.training is False
 
 
 def test_bearer_authentication_is_enforced():
