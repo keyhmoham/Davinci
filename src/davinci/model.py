@@ -1,6 +1,7 @@
 """Canonical Davinci decoder reference. Dense masks are for short tests, not 500K context."""
 from __future__ import annotations
 from dataclasses import asdict, dataclass
+import math
 from typing import Optional
 import torch
 import torch.nn as nn
@@ -26,27 +27,40 @@ class DavinciConfig:
     global_attention_chunk_size: int = 64
 
     def validate(self):
-        positive = {
-            "vocab_size": self.vocab_size, "hidden_size": self.hidden_size,
+        integer_fields = {
+            "vocab_size": self.vocab_size,
+            "hidden_size": self.hidden_size,
             "num_hidden_layers": self.num_hidden_layers,
             "num_attention_heads": self.num_attention_heads,
             "num_key_value_heads": self.num_key_value_heads,
-            "head_dim": self.head_dim, "intermediate_size": self.intermediate_size,
-            "local_window": self.local_window, "global_every_n_layers": self.global_every_n_layers,
+            "head_dim": self.head_dim,
+            "intermediate_size": self.intermediate_size,
+            "local_window": self.local_window,
+            "global_every_n_layers": self.global_every_n_layers,
             "attention_chunk_size": self.attention_chunk_size,
             "global_attention_chunk_size": self.global_attention_chunk_size,
         }
-        invalid = [name for name, value in positive.items() if value <= 0]
+        invalid = [
+            name for name, value in integer_fields.items()
+            if not isinstance(value, int) or isinstance(value, bool) or value <= 0
+        ]
         if invalid:
-            raise ValueError(f"Configuration values must be positive: {', '.join(invalid)}")
+            raise ValueError(
+                f"Configuration values must be positive integers: {', '.join(invalid)}"
+            )
         if self.hidden_size != self.num_attention_heads * self.head_dim:
             raise ValueError("hidden_size must equal num_attention_heads * head_dim")
         if self.num_attention_heads % self.num_key_value_heads:
             raise ValueError("num_attention_heads must be divisible by num_key_value_heads")
         if self.head_dim % 2:
             raise ValueError("head_dim must be even for split-half RoPE")
-        if not 0.0 <= self.dropout < 1.0:
-            raise ValueError("dropout must be in [0, 1)")
+        for name, value in (("norm_eps", self.norm_eps), ("rope_theta", self.rope_theta)):
+            if (not isinstance(value, (int, float)) or isinstance(value, bool)
+                    or not math.isfinite(value) or value <= 0):
+                raise ValueError(f"{name} must be a finite positive number")
+        if (not isinstance(self.dropout, (int, float)) or isinstance(self.dropout, bool)
+                or not math.isfinite(self.dropout) or not 0.0 <= self.dropout < 1.0):
+            raise ValueError("dropout must be a finite number in [0, 1)")
 
     @classmethod
     def from_dict(cls, values):
