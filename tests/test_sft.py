@@ -57,6 +57,7 @@ def test_group_split_keeps_same_document_and_duplicate_content_together():
     examples = [
         {"id": "a", "messages": [{"role": "user", "content": "same"}]},
         {"id": "b", "messages": [{"role": "user", "content": "same"}]},
+        {"id": "e", "source_document_id": "doc-2", "messages": [{"role": "user", "content": "same"}]},
         {"id": "c", "source_document_id": "doc-1", "messages": [{"role": "user", "content": "x"}]},
         {"id": "d", "source_document_id": "doc-1", "messages": [{"role": "user", "content": "y"}]},
     ]
@@ -64,7 +65,7 @@ def test_group_split_keeps_same_document_and_duplicate_content_together():
     train_ids = {item["id"] for item in train}
     val_ids = {item["id"] for item in validation}
     assert ({"c", "d"} <= train_ids) or ({"c", "d"} <= val_ids)
-    assert ({"a", "b"} <= train_ids) or ({"a", "b"} <= val_ids)
+    assert ({"a", "b", "e"} <= train_ids) or ({"a", "b", "e"} <= val_ids)
     assert not (train_ids & val_ids)
 
 
