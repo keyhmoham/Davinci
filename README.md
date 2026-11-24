@@ -29,7 +29,7 @@ Davinci is an experimental Persian-first bilingual (Persian/English) language-mo
 
 ## Local setup
 
-Python 3.11+ is recommended. Install PyTorch for your platform and pytest:
+Python 3.11+ is recommended. The CI environment pins PyTorch 2.6.0 (CPU) and pytest 8.3.5. For local runs, install PyTorch using the [official platform selector](https://pytorch.org/get-started/locally/) and install the pinned test tooling:
 
 ```bash
 python -m pip install torch pytest
@@ -44,6 +44,7 @@ PYTHONPATH=. python -m pytest -q \
   tests/test_long_context.py \
   tests/test_hierarchical_retrieval.py \
   tests/test_tool_call.py \
+  tests/test_generation.py \
   tests/test_notebook_integrity.py
 ```
 
