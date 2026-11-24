@@ -12,6 +12,8 @@ class CompressedMemoryConfig:
     retrieval_top_k: int = 32
     def validate(self):
         for name, value in vars(self).items():
+            if not isinstance(value, int) or isinstance(value, bool):
+                raise ValueError(f"{name} must be an integer")
             if value <= 0:
                 raise ValueError(f"{name} must be positive")
         if self.compression_group_size > self.recent_window:
@@ -78,6 +80,8 @@ class CompressedKVMemory:
                scale: Optional[float] = None) -> torch.Tensor:
         if query.ndim != 4 or self.recent_key is None:
             raise ValueError("append KV entries before calling attend")
+        if query.shape[2] == 0:
+            raise ValueError("attend requires at least one query token")
         if query_positions.ndim != 1 or query_positions.numel() != query.shape[2]:
             raise ValueError("query_positions must have shape [Q]")
         if query.device != self.recent_key.device or query_positions.device != query.device:
