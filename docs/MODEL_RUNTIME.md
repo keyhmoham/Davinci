@@ -84,3 +84,6 @@ Mixed-precision training note: `train_microbatch` distinguishes an accumulation 
 ## Tool-call runtime boundary
 
 The strict JSON parser and host-controlled allowlist live in `src/davinci/tool_call.py`; see [TOOL_CALL_PROTOCOL.md](TOOL_CALL_PROTOCOL.md). This module is a dispatch primitive, not a complete agent loop. It never evaluates model-generated code. The application must authorize each registered tool and provide consent, timeouts, rate limits, sandboxing, redaction, and audit logging.
+
+
+Cached single-request autoregressive generation is implemented in `src/davinci/generation.py`; see [GENERATION.md](GENERATION.md). It uses the canonical prefill/decode cache, but does not provide a production serving stack.
