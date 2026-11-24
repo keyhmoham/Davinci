@@ -26,26 +26,25 @@ def retrieval_recall(
     key: torch.Tensor,
     query: torch.Tensor,
     group_size: int,
-    selected_count: int,
+    selected_count: tuple[int, int],
 ) -> float:
     """Recall of pooled-key top-k groups against groups ranked by best token score."""
     # Inputs: key [1, H, T, D], query [1, H, Q, D].
     _, heads, token_count, dim = key.shape
-    usable = (token_count // group_size) * group_size
-    groups = usable // group_size
+    groups = selected_count[1]
+    usable = groups * group_size
     if groups == 0:
         return float("nan")
     grouped = key[:, :, :usable].reshape(1, heads, groups, group_size, dim)
     pooled = grouped.mean(dim=3)
     q = query.float()
     pooled_scores = torch.einsum("bhqd,bhgd->bhqg", q, pooled.float()) / (dim ** 0.5)
-    token_scores = torch.einsum("bhqd,bhgd->bhqg", q, grouped.float().amax(dim=3)) / (dim ** 0.5)
     # Use exact max-over-token dot product as a retrieval oracle.
     token_scores = torch.stack([
         torch.einsum("bhqd,bhgd->bhqg", q, grouped[:, :, :, offset, :].float()) / (dim ** 0.5)
         for offset in range(group_size)
     ], dim=0).amax(dim=0)
-    k = min(selected_count, groups)
+    k = min(selected_count[0], groups)
     predicted = pooled_scores.topk(k, dim=-1).indices
     oracle = token_scores.topk(k, dim=-1).indices
     hits = (predicted.unsqueeze(-1) == oracle.unsqueeze(-2)).any(dim=-1).float()
@@ -100,7 +99,7 @@ def main() -> None:
     attend_ms = (time.perf_counter() - start) * 100
 
     selected_groups = min(args.top_k, cache.memory_key.shape[2])
-    recall = retrieval_recall(key, query, args.group_size, selected_groups)
+    recall = retrieval_recall(key, query, args.group_size, (selected_groups, cache.memory_key.shape[2]))
     full_kv_bytes = (key.numel() + value.numel()) * key.element_size()
     stored_kv_bytes = sum(
         tensor.numel() * tensor.element_size()
