@@ -99,7 +99,12 @@ def create_app(
             prompt = _format_prompt(request.messages)
         except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
-        ids = tokenizer.encode(prompt, out_type=int)
+        try:
+            ids = tokenizer.encode(prompt, out_type=int)
+        except TypeError:
+            ids = tokenizer.encode(prompt)
+        if hasattr(ids, "tolist"):
+            ids = ids.tolist()
         if not ids:
             raise HTTPException(status_code=400, detail="The encoded prompt is empty")
         if len(ids) > max_input_tokens:
@@ -159,7 +164,7 @@ def create_app(
                     yield "data: " + json.dumps(payload, ensure_ascii=False) + "\n\n"
                     yield "data: [DONE]\n\n"
                 except Exception as exc:
-                    payload = {"error": {"message": str(exc), "type": "server_error"}}
+                    payload = {"error": {"message": "Generation failed", "type": "server_error"}}
                     yield "data: " + json.dumps(payload, ensure_ascii=False) + "\n\n"
                     yield "data: [DONE]\n\n"
                 finally:
