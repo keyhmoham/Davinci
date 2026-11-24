@@ -15,6 +15,8 @@ class FakeTokenizer:
         return "".join("x" for token in ids if token == 2)
     def eos_id(self):
         return 0
+    def get_piece_size(self):
+        return 5
 
 
 class FakeModel(torch.nn.Module):
@@ -107,3 +109,11 @@ def test_invalid_message_roles_and_final_role_are_rejected():
 def test_server_configuration_rejects_inconsistent_limits():
     with pytest.raises(ValueError, match="must not exceed"):
         create_app(FakeModel(), FakeTokenizer(), max_input_tokens=100, max_total_tokens=50)
+
+
+def test_server_rejects_tokenizer_vocabulary_mismatch():
+    class WrongTokenizer(FakeTokenizer):
+        def get_piece_size(self):
+            return 99
+    with pytest.raises(ValueError, match="vocabulary size"):
+        create_app(FakeModel(), WrongTokenizer())
