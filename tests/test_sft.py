@@ -39,6 +39,12 @@ def test_tool_call_and_result_payloads_are_strict_json():
         tool_call_content("add", {"value": float("nan")})
 
 
+def test_tool_result_serialization_preserves_explicit_trust_label():
+    payload = tool_result_content("lookup", {"items": [1]}, trusted=False)
+    assert '"trusted":false' in payload
+    with pytest.raises(TypeError, match="trusted must be a boolean"):
+        tool_result_content("lookup", {}, trusted="false")
+
 def test_sft_tool_payloads_reject_names_not_accepted_by_runtime():
     with pytest.raises(ValueError, match="tool name must match"):
         tool_call_content("bad name", {})
@@ -72,7 +78,7 @@ def test_recorded_trajectory_tool_events_are_canonicalized_and_masked_correctly(
     assert tool_result_content("add", {"sum": 3}) in serialized
     example = build_masked_example(messages, tokenizer)
     call_payload = tool_call_content("add", {"left": 1, "right": 2})
-    result_payload = tool_result_content("add", {"sum": 3})
+    result_payload = tool_result_content("add", {"sum": 3}, trusted=False)
     call_start = serialized.index(call_payload)
     result_start = serialized.index(result_payload)
     assert all(value != -100 for value in example["labels"][call_start:call_start + len(call_payload)])
