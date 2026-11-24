@@ -28,6 +28,7 @@ Davinci is an experimental Persian-first bilingual (Persian/English) language-mo
 - `src/davinci/near_dedup.py`: approximate SimHash/LSH candidate discovery with Jaccard verification; emits review candidates rather than deleting data automatically.
 - `src/davinci/data_pipeline.py`: strict dataset-manifest validation, explicit license-review gates, artifact SHA-256 verification, and streaming JSONL readers.
 - `src/davinci/sft.py`: canonical chat serialization, tool-trace payload formatting, assistant-only target masking, deterministic grouped splits, and SFT loss helpers.
+- [SFT data contract](docs/SFT_DATA_CONTRACT.md): structured tool-trace canonicalization, assistant-only supervision, and prompt-level leakage safeguards.
 - `src/davinci/preference.py`: preference-pair validation, prompt-grouped deterministic splits, response-only sequence log-probabilities, and the DPO objective.
 - `src/davinci/server.py`: optional single-process OpenAI-compatible HTTP/SSE inference API with bearer authentication and request limits.
 - `src/davinci/evaluation.py`: token-weighted perplexity, normalized exact match, and explicit language/task-grouped evaluation metrics.
