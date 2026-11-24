@@ -120,3 +120,13 @@ def test_dpo_notebook_checks_manifest_and_uses_frozen_reference():
     assert "reference.eval()" in source
     assert "parameter.requires_grad_(False)" in source
     assert "sequence_log_probs" in source
+
+
+def test_sft_split_is_shared_by_tokenizer_and_finetuning():
+    builder = _notebook_source("Davinci_SFT_Reasoning_Agent_Data.ipynb")
+    tokenizer = _notebook_source("Davinci_Tokenizer_Training_Evaluation.ipynb")
+    trainer = _notebook_source("Davinci_SFT_Training_Chat_Finetuning.ipynb")
+    assert 'record["split"]=assign_chat_split(record)' in builder
+    assert '"split_field":"split","allowed_splits":["train"]' in tokenizer
+    assert 'item["split"] not in {"train","validation"}' in trainer
+    assert 'item for item in examples if item["split"]=="validation"' in trainer
