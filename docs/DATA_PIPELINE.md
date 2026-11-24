@@ -26,7 +26,7 @@ The document is validation data when the bucket is below the configured fraction
 
 ## Multi-source merge
 
-`notebooks/Davinci_Corpus_Merge_Builder.ipynb` verifies every input manifest and artifact hash, requires each source to be explicitly approved for pretraining, performs cross-source exact deduplication with a disk-backed SQLite hash table, assigns deterministic document-level splits, and records source manifest hashes in the merged manifest. It is still a baseline: it does not perform near-duplicate detection, language identification, or full quality scoring.
+`notebooks/Davinci_Corpus_Merge_Builder.ipynb` verifies every input manifest and artifact hash, requires each source to be explicitly approved for pretraining, performs cross-source exact deduplication with a disk-backed SQLite hash table, assigns deterministic document-level splits, and records source manifest hashes in the merged manifest. It also emits a sampled near-duplicate candidate report using `src/davinci/near_dedup.py`; the report is not applied automatically. The merge remains a baseline: it does not perform full-corpus near-duplicate filtering, language identification, or comprehensive quality scoring.
 
 ## Python API
 
