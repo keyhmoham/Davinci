@@ -75,7 +75,7 @@ def test_recorded_trajectory_tool_events_are_canonicalized_and_masked_correctly(
     ]
     serialized = serialize_messages(messages)
     assert tool_call_content("add", {"left": 1, "right": 2}) in serialized
-    assert tool_result_content("add", {"sum": 3}) in serialized
+    assert tool_result_content("add", {"sum": 3}, trusted=False) in serialized
     example = build_masked_example(messages, tokenizer)
     call_payload = tool_call_content("add", {"left": 1, "right": 2})
     result_payload = tool_result_content("add", {"sum": 3}, trusted=False)
