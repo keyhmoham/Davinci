@@ -237,6 +237,10 @@ def test_sft_notebook_applies_prompt_grouped_split_before_training():
     assert "train_examples,val_examples=split_examples(examples,validation_fraction=VALIDATION_FRACTION,seed=SEED)" in source
     assert '"validation_fraction":VALIDATION_FRACTION' in source
     assert '"split_strategy":"normalized_prompt_source_document_exact_content"' in source
+    assert "TRAIN_SPLIT_SHA256=split_ids_sha256(train_examples)" in source
+    assert "VALIDATION_SPLIT_SHA256=split_ids_sha256(val_examples)" in source
+    assert '"train_split_sha256":TRAIN_SPLIT_SHA256' in source
+    assert '"validation_split_sha256":VALIDATION_SPLIT_SHA256' in source
     assert 'item["split"]=="train"' not in source
     assert 'item["split"]=="validation"' not in source
 
