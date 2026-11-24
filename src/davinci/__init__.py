@@ -1,6 +1,7 @@
 """Davinci model and training package."""
 from .model import DavinciConfig, DavinciForCausalLM, KVCache, count_parameters
 from .train import causal_lm_loss, evaluate_loss, train_microbatch
+from .checkpoint import load_training_checkpoint, save_training_checkpoint
 from .generation import generate, sample_next_token
 from .evaluation import evaluate_language_model, exact_match_metrics, grouped_exact_match_metrics
 from .data_pipeline import (
@@ -29,6 +30,7 @@ from .tool_call import (
 __all__ = [
     "DavinciConfig", "DavinciForCausalLM", "KVCache", "count_parameters",
     "causal_lm_loss", "evaluate_loss", "train_microbatch",
+    "load_training_checkpoint", "save_training_checkpoint",
     "generate", "sample_next_token", "evaluate_language_model", "exact_match_metrics", "grouped_exact_match_metrics",
     "DatasetManifestError", "iter_jsonl", "iter_text_records", "load_dataset_manifest",
     "sha256_file", "validate_dataset_manifest", "verify_dataset_artifact",
