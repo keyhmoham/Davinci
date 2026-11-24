@@ -43,8 +43,8 @@ def tool_call_content(name: str, arguments: Mapping[str, Any]) -> str:
 
 
 def tool_result_content(name: str, result: Any) -> str:
-    if not isinstance(name, str) or not name.strip():
-        raise ValueError("tool name must be a non-empty string")
+    if not isinstance(name, str) or not _TOOL_NAME_RE.fullmatch(name):
+        raise ValueError("tool name must match [A-Za-z][A-Za-z0-9_.-]{0,63}")
     return SPECIAL_TOKENS["tool_result"] + _strict_json({"name": name, "result": result})
 
 
