@@ -94,6 +94,8 @@ def validate_trajectory(item: Any) -> list[str]:
 
 
 def trajectory_hash(item: Mapping[str, Any]) -> str:
+    if not isinstance(item, Mapping):
+        raise ValueError("trajectory must be an object")
     try:
         payload = json.dumps(
             {"language": item.get("language"), "messages": item.get("messages")},
