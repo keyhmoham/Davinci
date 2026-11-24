@@ -39,6 +39,12 @@ def test_tool_call_and_result_payloads_are_strict_json():
         tool_call_content("add", {"value": float("nan")})
 
 
+def test_sft_tool_payloads_reject_names_not_accepted_by_runtime():
+    with pytest.raises(ValueError, match="tool name must match"):
+        tool_call_content("bad name", {})
+    with pytest.raises(ValueError, match="tool name must match"):
+        tool_result_content("1bad", {})
+
 def test_assistant_only_masking_supervises_tool_calls_not_observations():
     tokenizer = CharacterTokenizer()
     messages = [
