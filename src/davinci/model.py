@@ -23,6 +23,7 @@ class DavinciConfig:
     tie_word_embeddings: bool = True
     gradient_checkpointing: bool = False
     attention_chunk_size: int = 128
+    global_attention_chunk_size: int = 64
 
     def validate(self):
         positive = {
@@ -33,6 +34,7 @@ class DavinciConfig:
             "head_dim": self.head_dim, "intermediate_size": self.intermediate_size,
             "local_window": self.local_window, "global_every_n_layers": self.global_every_n_layers,
             "attention_chunk_size": self.attention_chunk_size,
+            "global_attention_chunk_size": self.global_attention_chunk_size,
         }
         invalid = [name for name, value in positive.items() if value <= 0]
         if invalid:
@@ -123,15 +125,28 @@ class GQAAttention(nn.Module):
             k, v = k.repeat_interleave(self.groups,1), v.repeat_interleave(self.groups,1)
         dropout_p = self.c.dropout if self.training else 0.0
         if self.is_global:
-            # No explicit triangular mask allocation for ordinary full-sequence forward.
-            if cache is None:
-                y = F.scaled_dot_product_attention(q,k,v,dropout_p=dropout_p,is_causal=True)
-            else:
+            if cache is not None:
                 # Cached decode has fewer queries than keys; build only this small query mask.
                 delta = positions[:,None] - key_positions[None,:]
                 allowed = delta >= 0
                 y = F.scaled_dot_product_attention(q,k,v,attn_mask=allowed,
                     dropout_p=dropout_p,is_causal=False)
+            else:
+                # Exact global attention in query chunks. This bounds the explicit
+                # causal mask to [global_chunk_size, sequence], while retaining
+                # every key/value and exactly the same attention semantics.
+                pieces = []
+                chunk = self.c.global_attention_chunk_size
+                for start in range(0,t,chunk):
+                    end = min(start+chunk,t)
+                    qpos = positions[start:end]
+                    last = int(torch.searchsorted(key_positions,qpos[-1],right=True).item())
+                    kp = key_positions[:last]
+                    allowed = qpos[:,None] >= kp[None,:]
+                    pieces.append(F.scaled_dot_product_attention(q[:,:,start:end,:],
+                        k[:,:,:last,:],v[:,:,:last,:],attn_mask=allowed,
+                        dropout_p=dropout_p,is_causal=False))
+                y = torch.cat(pieces,dim=2)
         else:
             # Exact causal sliding-window attention. Chunking bounds the temporary
             # attention mask to [chunk_size, local_window + chunk_size], not [T,T].
