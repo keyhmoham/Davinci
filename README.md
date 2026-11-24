@@ -130,3 +130,19 @@ All notebooks are stored in `notebooks/` and can be opened in GitHub or Colab. T
 | Repository checks | [Repository Audit Checks](notebooks/Davinci_Repository_Audit_Checks.ipynb) |
 | End-to-end smoke test | [End-to-End Tiny Integration Test](notebooks/Davinci_End_to_End_Tiny_Integration_Test.ipynb) |
 | Long-context synthetic eval | [Long Context Curriculum Synthetic Evaluation](notebooks/Davinci_Long_Context_Curriculum_Synthetic_Evaluation.ipynb) |
+
+
+## Long-context evaluation and profiling
+
+The experimental synthetic retrieval helpers live in `src/davinci/long_context_eval.py`. They generate deterministic Persian/English needle tasks, measure lengths with the selected tokenizer, and write a JSONL plus SHA-256 manifest. The Colab notebook `notebooks/Davinci_Long_Context_Curriculum_Synthetic_Evaluation.ipynb` uses the trained SentencePiece model at the documented Drive path; it stops if that artifact is missing rather than estimating token counts from characters.
+
+For a checkpoint-specific prefill/decode and KV-cache microbenchmark:
+
+```bash
+PYTHONPATH=. python experiments/benchmark_context.py \
+  --checkpoint /path/to/davinci-checkpoint \
+  --lengths 1024,2048,4096,8192 \
+  --decode-steps 16
+```
+
+The benchmark uses random token IDs and reports hardware-specific timing and memory only. It does not score language quality, and a successful run is not evidence that 500K context is usable. Increase lengths gradually on the target hardware and record OOMs as results, not as successful measurements.
