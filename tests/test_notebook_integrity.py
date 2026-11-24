@@ -207,3 +207,13 @@ def test_merged_corpus_manifest_reports_script_profile_without_language_claims()
     assert "'script_profile_not_language_id'" in source
     assert "'arabic_script_alpha_ratio'" in source
     assert "not necessarily Persian" in source
+
+
+
+def test_pretraining_run_manifest_records_throughput_and_peak_memory():
+    source = _notebook_source("Davinci_Pretraining_DataLoader_Training_Engine.ipynb")
+    assert "torch.cuda.reset_peak_memory_stats()" in source
+    assert "tokens_per_second=seen_tokens/elapsed_seconds" in source
+    assert '"peak_cuda_allocated_bytes":peak_cuda_allocated_bytes' in source
+    assert '"peak_cuda_reserved_bytes":peak_cuda_reserved_bytes' in source
+    assert '"session_optimizer_steps":global_step-session_start_step' in source
