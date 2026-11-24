@@ -67,6 +67,8 @@ def test_sampling_top_k_and_top_p_produce_valid_token_ids():
     {"max_new_tokens": 1.5},
     {"top_k": 0},
     {"top_p": 0.0},
+    {"temperature": 0.0, "top_k": 0},
+    {"top_p": float("nan")},
     {"eos_token_id": 999},
 ])
 def test_generation_rejects_invalid_arguments(kwargs):
