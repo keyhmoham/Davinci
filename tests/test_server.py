@@ -61,7 +61,7 @@ def test_chat_completion_returns_openai_compatible_response():
     assert body["choices"][0]["message"]["role"] == "assistant"
     assert body["choices"][0]["message"]["content"] == "xx"
     assert body["usage"]["completion_tokens"] == 2
-    assert model.training is True
+    assert model.training is False
 
 
 def test_streaming_chat_completion_emits_sse_and_done_marker():
@@ -142,3 +142,19 @@ def test_request_schema_rejects_empty_and_oversized_message_content():
         "messages": [{"role": "user", "content": "x" * 200_001}],
     })
     assert oversized.status_code == 422
+
+
+
+def test_server_forces_eval_mode_and_rejects_unknown_message_fields():
+    model = FakeModel()
+    model.train()
+    client = TestClient(create_app(
+        model, FakeTokenizer(), max_input_tokens=20,
+        max_new_tokens=4, max_total_tokens=24, max_concurrent_requests=2,
+    ))
+    assert model.training is False
+    response = client.post("/v1/chat/completions", json={
+        "messages": [{"role": "user", "content": "hello", "unexpected": "field"}],
+    })
+    assert response.status_code == 422
+    assert model.training is False
