@@ -22,6 +22,7 @@ class DavinciConfig:
     dropout: float = 0.0
     tie_word_embeddings: bool = True
     gradient_checkpointing: bool = False
+    attention_chunk_size: int = 128
 
     def validate(self):
         positive = {
@@ -31,6 +32,7 @@ class DavinciConfig:
             "num_key_value_heads": self.num_key_value_heads,
             "head_dim": self.head_dim, "intermediate_size": self.intermediate_size,
             "local_window": self.local_window, "global_every_n_layers": self.global_every_n_layers,
+            "attention_chunk_size": self.attention_chunk_size,
         }
         invalid = [name for name, value in positive.items() if value <= 0]
         if invalid:
@@ -119,12 +121,35 @@ class GQAAttention(nn.Module):
             key_positions = positions
         if self.groups != 1:
             k, v = k.repeat_interleave(self.groups,1), v.repeat_interleave(self.groups,1)
-        delta = positions[:,None] - key_positions[None,:]
-        allowed = delta >= 0
-        if not self.is_global:
-            allowed = allowed & (delta < self.window)
-        y = F.scaled_dot_product_attention(q,k,v,attn_mask=allowed,
-                dropout_p=self.c.dropout if self.training else 0.0, is_causal=False)
+        dropout_p = self.c.dropout if self.training else 0.0
+        if self.is_global:
+            # No explicit triangular mask allocation for ordinary full-sequence forward.
+            if cache is None:
+                y = F.scaled_dot_product_attention(q,k,v,dropout_p=dropout_p,is_causal=True)
+            else:
+                # Cached decode has fewer queries than keys; build only this small query mask.
+                delta = positions[:,None] - key_positions[None,:]
+                allowed = delta >= 0
+                y = F.scaled_dot_product_attention(q,k,v,attn_mask=allowed,
+                    dropout_p=dropout_p,is_causal=False)
+        else:
+            # Exact causal sliding-window attention. Chunking bounds the temporary
+            # attention mask to [chunk_size, local_window + chunk_size], not [T,T].
+            pieces = []
+            chunk = self.c.attention_chunk_size
+            for start in range(0,t,chunk):
+                end = min(start+chunk,t)
+                qpos = positions[start:end]
+                lower = qpos[0] - self.window + 1
+                first = int(torch.searchsorted(key_positions,lower,left=True).item())
+                last = int(torch.searchsorted(key_positions,qpos[-1],right=True).item())
+                kc,vc = k[:,:,first:last,:],v[:,:,first:last,:]
+                kp = key_positions[first:last]
+                delta = qpos[:,None] - kp[None,:]
+                allowed = (delta >= 0) & (delta < self.window)
+                pieces.append(F.scaled_dot_product_attention(q[:,:,start:end,:],kc,vc,
+                    attn_mask=allowed,dropout_p=dropout_p,is_causal=False))
+            y = torch.cat(pieces,dim=2)
         # Prefill needs the full prompt for every query, then can evict old local KV.
         if cache is not None and t > 1:
             cache.trim()
