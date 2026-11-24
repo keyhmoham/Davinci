@@ -140,3 +140,17 @@ def test_chunked_attention_matches_independent_dense_reference():
             actual=attn(x,positions)
             expected=_dense_attention_reference(attn,x,positions)
         torch.testing.assert_close(actual,expected,rtol=1e-5,atol=1e-5)
+
+
+def test_config_rejects_non_integer_and_non_finite_values():
+    import pytest
+    with pytest.raises(ValueError, match="positive integers"):
+        DavinciConfig(num_hidden_layers=2.5).validate()
+    with pytest.raises(ValueError, match="positive integers"):
+        DavinciConfig(attention_chunk_size=True).validate()
+    with pytest.raises(ValueError, match="norm_eps"):
+        DavinciConfig(norm_eps=0.0).validate()
+    with pytest.raises(ValueError, match="rope_theta"):
+        DavinciConfig(rope_theta=float("nan")).validate()
+    with pytest.raises(ValueError, match="dropout"):
+        DavinciConfig(dropout=float("inf")).validate()
