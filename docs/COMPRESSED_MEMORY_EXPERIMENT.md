@@ -18,3 +18,10 @@ This is a short-sequence research prototype, not evidence of 500K-context capabi
 
 ## Tests
 Run: PYTHONPATH=. python -m pytest -q tests/test_long_context.py
+
+
+## Input and streaming invariants
+
+The implementation requires strictly increasing positions both within each append call and across append calls. KV tensors must share dtype/device and their batch, head, and head-dimension shape must remain stable. Query tensors and positions must be on the cache device and use the cache dtype for queries. Queries with no causally visible cached entries are defined to return zero.
+
+Chunked appends are intended to preserve the same group boundaries and retained state as appending the same ordered sequence in one call; a regression test checks this invariant. These checks do not establish numerical equivalence to full, uncompressed attention.
