@@ -11,7 +11,7 @@ import threading
 import time
 import uuid
 from collections.abc import Iterator
-from typing import Any
+from typing import Any, Literal
 
 import torch
 
@@ -27,15 +27,15 @@ except ImportError as exc:  # pragma: no cover - exercised in environments witho
 
 
 class ChatMessage(BaseModel):
-    role: str
-    content: str
+    role: Literal["system", "user", "assistant", "tool"]
+    content: str = Field(min_length=1, max_length=200_000)
 
 
 class ChatCompletionRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     model: str = "davinci"
-    messages: list[ChatMessage] = Field(min_length=1)
+    messages: list[ChatMessage] = Field(min_length=1, max_length=128)
     max_tokens: int = Field(default=128, ge=1)
     temperature: float = Field(default=0.0, ge=0.0, le=2.0, allow_inf_nan=False)
     top_p: float = Field(default=1.0, gt=0.0, le=1.0, allow_inf_nan=False)
