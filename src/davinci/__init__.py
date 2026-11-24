@@ -1,5 +1,5 @@
 """Davinci model and training package."""
-from .model import DavinciConfig, DavinciForCausalLM, KVCache
+from .model import DavinciConfig, DavinciForCausalLM, KVCache, count_parameters
 from .train import causal_lm_loss, evaluate_loss, train_microbatch
 from .generation import generate, sample_next_token
 from .data_audit import (
@@ -12,7 +12,7 @@ from .tool_call import (
 )
 
 __all__ = [
-    "DavinciConfig", "DavinciForCausalLM", "KVCache",
+    "DavinciConfig", "DavinciForCausalLM", "KVCache", "count_parameters",
     "causal_lm_loss", "evaluate_loss", "train_microbatch",
     "generate", "sample_next_token",
     "assign_split", "content_sha256", "deduplicate_records", "normalize_persian_text",
