@@ -31,8 +31,11 @@ if not reasons:
 
 ## Deliberate limits
 
-These helpers do not fetch datasets, inspect licenses, identify language, detect
-near-duplicates, remove personal information, or certify data for training. Dataset
+These helpers do not fetch datasets, inspect licenses, identify language, remove
+personal information, or certify data for training. Approximate near-duplicate
+candidate discovery is available separately in `src/davinci/near_dedup.py`; it uses
+SimHash/LSH shortlisting and exact Jaccard verification over word n-grams. It is
+intentionally a review report, not an automatic deletion policy. Dataset
 revision/config/split and text-column selection must be explicit. A human must review
 the upstream dataset card and every applicable license. Keep raw source records
 separate from normalized derivatives and retain a provenance manifest.
