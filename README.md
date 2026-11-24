@@ -132,6 +132,10 @@ All notebooks are stored in `notebooks/` and can be opened in GitHub or Colab. T
 | Long-context synthetic eval | [Long Context Curriculum Synthetic Evaluation](notebooks/Davinci_Long_Context_Curriculum_Synthetic_Evaluation.ipynb) |
 
 
+## Preference data and DPO
+
+The human-preference builder deliberately exports unapproved data by default. Review provenance, annotation quality, privacy/consent, and upstream terms before approval. The DPO notebook verifies the preference artifact hash and base SFT/tokenizer provenance, splits by prompt, and uses deterministic resumable checkpoints. See [`docs/PREFERENCE_OPTIMIZATION.md`](docs/PREFERENCE_OPTIMIZATION.md). It remains a full-parameter single-process baseline and requires both policy and frozen reference models in memory; no preference labels or model-quality claims are fabricated.
+
 ## Reproducible training checkpoints
 
 The canonical checkpoint API is in [`src/davinci/checkpoint.py`](src/davinci/checkpoint.py), with the trusted-checkpoint contract and resume example in [`docs/TRAINING_CHECKPOINTS.md`](docs/TRAINING_CHECKPOINTS.md). It atomically saves model/optimizer/scheduler/scaler state, Python/NumPy/PyTorch RNG states, optional in-flight gradients, and caller-supplied data-cursor state. The pretraining Colab notebook uses this helper and verifies a run fingerprint before resume. Exact data replay still depends on the caller's deterministic loader and cursor; the current notebook keeps `NUM_WORKERS=0`.
