@@ -83,9 +83,9 @@ def test_public_colab_notebooks_do_not_require_github_secrets():
         assert "https://github.com/keyhmoham/Davinci.git" in source
 
 
-def test_sft_checkpoint_has_single_manifest_fingerprint_key():
+def test_sft_fingerprint_and_run_manifest_record_dataset_hash():
     source = _notebook_source("Davinci_SFT_Training_Chat_Finetuning.ipynb")
-    assert source.count('"dataset_manifest_sha256"') == 2  # checkpoint and run manifest each record it once
+    assert source.count('"dataset_manifest_sha256"') == 2  # run fingerprint and exported manifest
     assert "sft_manifest_hash=file_sha256(SFT_MANIFEST_PATH)" in source
 
 
@@ -171,3 +171,19 @@ def test_corpus_merge_exports_near_duplicate_review_report_without_auto_filterin
     assert "find_near_duplicate_pairs" in source
     assert "near_duplicate_candidates.json" in source
     assert "near_duplicate_audit" in source
+
+
+
+def test_sft_and_dpo_notebooks_use_canonical_resumable_checkpoints():
+    sft = _notebook_source("Davinci_SFT_Training_Chat_Finetuning.ipynb")
+    dpo = _notebook_source("Davinci_DPO_Preference_Optimization.ipynb")
+    for source in (sft, dpo):
+        assert "save_training_checkpoint" in source
+        assert "load_training_checkpoint" in source
+        assert "expected_metadata=" in source
+        assert "latest_" in source
+        assert "torch.Generator().manual_seed(SEED+epoch)" in source
+    assert "SFT_CHECKPOINT_METADATA" in sft
+    assert "DPO_CHECKPOINT_METADATA" in dpo
+    assert "epoch_loss_sum" in sft
+    assert "'batch_index':batch_index" in dpo
