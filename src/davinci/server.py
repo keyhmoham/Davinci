@@ -10,7 +10,7 @@ import secrets
 import threading
 import time
 import uuid
-from collections.abc import Iterator, Mapping
+from collections.abc import Iterator
 from typing import Any
 
 import torch
@@ -32,6 +32,9 @@ class ChatMessage(BaseModel):
 
 
 class ChatCompletionRequest(BaseModel):
+    class Config:
+        extra = "forbid"
+
     model: str = "davinci"
     messages: list[ChatMessage] = Field(min_length=1)
     max_tokens: int = Field(default=128, ge=1)
@@ -44,7 +47,7 @@ class ChatCompletionRequest(BaseModel):
 def _format_prompt(messages: list[ChatMessage]) -> str:
     parts = []
     for index, message in enumerate(messages):
-        if message.role not in SPECIAL_TOKENS or message.role == "tool_call":
+        if message.role not in {"system", "user", "assistant", "tool"}:
             raise ValueError(f"unsupported message role at index {index}: {message.role!r}")
         if not isinstance(message.content, str):
             raise ValueError(f"message content at index {index} must be a string")
