@@ -158,3 +158,16 @@ def test_server_forces_eval_mode_and_rejects_unknown_message_fields():
     })
     assert response.status_code == 422
     assert model.training is False
+
+
+
+def test_server_rejects_default_alias_when_custom_model_id_is_configured():
+    client = TestClient(create_app(
+        FakeModel(), FakeTokenizer(), model_name="davinci-research",
+        max_input_tokens=20, max_new_tokens=4, max_total_tokens=24,
+    ))
+    response = client.post("/v1/chat/completions", json={
+        "model": "davinci",
+        "messages": [{"role": "user", "content": "hello"}],
+    })
+    assert response.status_code == 404
