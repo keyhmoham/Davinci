@@ -2,6 +2,7 @@
 from .model import DavinciConfig, DavinciForCausalLM, KVCache, count_parameters
 from .train import causal_lm_loss, evaluate_loss, train_microbatch
 from .generation import generate, sample_next_token
+from .evaluation import evaluate_language_model, exact_match_metrics
 from .data_pipeline import (
     DatasetManifestError, iter_jsonl, iter_text_records, load_dataset_manifest,
     sha256_file, validate_dataset_manifest, verify_dataset_artifact,
@@ -27,7 +28,7 @@ from .tool_call import (
 __all__ = [
     "DavinciConfig", "DavinciForCausalLM", "KVCache", "count_parameters",
     "causal_lm_loss", "evaluate_loss", "train_microbatch",
-    "generate", "sample_next_token",
+    "generate", "sample_next_token", "evaluate_language_model", "exact_match_metrics",
     "DatasetManifestError", "iter_jsonl", "iter_text_records", "load_dataset_manifest",
     "sha256_file", "validate_dataset_manifest", "verify_dataset_artifact",
     "assign_split", "content_sha256", "deduplicate_records", "normalize_persian_text",
