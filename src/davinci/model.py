@@ -21,15 +21,28 @@ class DavinciConfig:
     global_every_n_layers: int = 4
     dropout: float = 0.0
     tie_word_embeddings: bool = True
+    gradient_checkpointing: bool = False
 
     def validate(self):
-        assert self.vocab_size > 0 and self.hidden_size > 0
-        assert self.num_hidden_layers > 0 and self.intermediate_size > 0
-        assert self.hidden_size == self.num_attention_heads * self.head_dim
-        assert self.num_attention_heads % self.num_key_value_heads == 0
-        assert self.num_key_value_heads > 0 and self.head_dim % 2 == 0
-        assert self.local_window > 0 and self.global_every_n_layers > 0
-        assert 0.0 <= self.dropout < 1.0
+        positive = {
+            "vocab_size": self.vocab_size, "hidden_size": self.hidden_size,
+            "num_hidden_layers": self.num_hidden_layers,
+            "num_attention_heads": self.num_attention_heads,
+            "num_key_value_heads": self.num_key_value_heads,
+            "head_dim": self.head_dim, "intermediate_size": self.intermediate_size,
+            "local_window": self.local_window, "global_every_n_layers": self.global_every_n_layers,
+        }
+        invalid = [name for name, value in positive.items() if value <= 0]
+        if invalid:
+            raise ValueError(f"Configuration values must be positive: {', '.join(invalid)}")
+        if self.hidden_size != self.num_attention_heads * self.head_dim:
+            raise ValueError("hidden_size must equal num_attention_heads * head_dim")
+        if self.num_attention_heads % self.num_key_value_heads:
+            raise ValueError("num_attention_heads must be divisible by num_key_value_heads")
+        if self.head_dim % 2:
+            raise ValueError("head_dim must be even for split-half RoPE")
+        if not 0.0 <= self.dropout < 1.0:
+            raise ValueError("dropout must be in [0, 1)")
 
     @classmethod
     def from_dict(cls, values):
@@ -158,14 +171,23 @@ class DavinciForCausalLM(nn.Module):
         pos = torch.arange(input_ids.shape[1],device=input_ids.device)
         x = self.embed_tokens(input_ids)
         for block in self.layers:
-            x = block(x,pos)
+            if self.training and self.config.gradient_checkpointing:
+                from torch.utils.checkpoint import checkpoint
+                x = checkpoint(block, x, pos, use_reentrant=False)
+            else:
+                x = block(x,pos)
         logits = self.lm_head(self.final_norm(x))
         loss = None
         if labels is not None:
             if labels.shape != input_ids.shape:
                 raise ValueError("labels must match input_ids shape")
+            if input_ids.shape[1] < 2:
+                raise ValueError("At least two tokens are required for next-token loss")
+            targets = labels[:,1:].contiguous().view(-1)
+            if not torch.any(targets != -100):
+                raise ValueError("labels contain no next-token targets (all are ignore_index)")
             loss = F.cross_entropy(logits[:,:-1,:].contiguous().view(-1,logits.shape[-1]),
-                                   labels[:,1:].contiguous().view(-1),ignore_index=-100)
+                                   targets,ignore_index=-100)
         return {"logits":logits,"loss":loss}
     @torch.no_grad()
     def prefill(self,input_ids):
