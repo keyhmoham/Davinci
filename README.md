@@ -13,7 +13,7 @@ Davinci is an experimental Persian-first bilingual (Persian/English) language-mo
 3. Train and evaluate the tokenizer: [Tokenizer training and evaluation](notebooks/Davinci_Tokenizer_Training_Evaluation.ipynb).
 4. Build SFT/reasoning data: [SFT and agent data](notebooks/Davinci_SFT_Reasoning_Agent_Data.ipynb) and [agent trajectory builder](notebooks/Davinci_Agent_Trajectory_Dataset_Builder.ipynb).
 5. Inspect the canonical decoder: [`src/davinci/model.py`](src/davinci/model.py) and [runtime documentation](docs/MODEL_RUNTIME.md).
-6. Run the small-scale training engine: [pretraining data loader and training engine](notebooks/Davinci_Pretraining_DataLoader_Training_Engine.ipynb). Begin with the notebook's `tiny` preset; do not select the target preset until memory and throughput are measured on the actual accelerator.
+6. Run the [GPU preflight diagnostics](notebooks/Davinci_GPU_Preflight_Diagnostics.ipynb) and [tiny overfit diagnostic](notebooks/Davinci_Tiny_Overfit_Diagnostic.ipynb) first. These are diagnostic checks, not model-quality evidence.\n7. Run the small-scale training engine: [pretraining data loader and training engine](notebooks/Davinci_Pretraining_DataLoader_Training_Engine.ipynb). Begin with the notebook's `tiny` preset; do not select the target preset until memory and throughput are measured on the actual accelerator.
 7. Evaluate and export: [evaluation harness](notebooks/Davinci_Evaluation_Harness_Baselines.ipynb), [inference/generation/export](notebooks/Davinci_Inference_Generation_Export.ipynb), and [end-to-end tiny integration test](notebooks/Davinci_End_to_End_Tiny_Integration_Test.ipynb).
 
 ## Repository map
