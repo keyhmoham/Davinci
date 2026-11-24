@@ -55,7 +55,7 @@ def test_pure_python_notebook_cells_compile():
 def _notebook_source(name: str) -> str:
     path = NOTEBOOKS / name
     data = json.loads(path.read_text(encoding="utf-8"))
-    return "\\n".join(
+    return "\n".join(
         "".join(cell.get("source", [])) if isinstance(cell.get("source", []), list)
         else cell.get("source", "")
         for cell in data["cells"]
