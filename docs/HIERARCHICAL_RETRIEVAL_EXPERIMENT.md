@@ -34,3 +34,19 @@ blocks are selected, the result is exact relative to flat dot-product top-k.
 ```bash
 PYTHONPATH=. python -m pytest -q tests/test_hierarchical_retrieval.py
 ```
+
+
+## Synthetic benchmark
+
+Run:
+
+```bash
+PYTHONPATH=. python experiments/benchmark_hierarchical_retrieval.py
+PYTHONPATH=. python experiments/benchmark_hierarchical_retrieval.py --device cpu --entries 4096 --block-size 32 --coarse-top-k 4
+```
+
+The report includes the candidate fraction, latency against flat exact top-k,
+and recall of the flat exact top-k set. Results depend strongly on query/key
+distribution and hardware. The benchmark is synthetic and does not justify
+using this index in the model without representative retrieval and downstream
+task evaluations.
