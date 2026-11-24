@@ -5,7 +5,8 @@ The canonical short-sequence decoder lives in `src/davinci/model.py`. Notebooks 
 ## Components
 
 - RMSNorm, RoPE, grouped-query attention (GQA), SwiGLU, tied embeddings
-- Hybrid schedule: every `global_every_n_layers` layer is global; other layers use a causal local window
+- Hybrid schedule: every `global_every_n_layers` layer is global; other layers use exact causal sliding-window attention, evaluated in bounded query chunks
+- Global full-sequence attention uses SDPA's causal mode without materializing a triangular mask
 - Full-sequence forward and one-token incremental decoding with per-layer KV caches
 - JSON config + PyTorch state-dict checkpoint save/load
 
@@ -44,7 +45,7 @@ The tests cover finite forward/loss/gradients, full-forward versus prefill/decod
 
 ## Important limits
 
-This is a correctness-oriented reference, not a production training or serving kernel. Its attention mask is dense and has quadratic sequence-length memory/work characteristics. It is **not** suitable for 500K-token prefill/training. The current RoPE is standard fixed-frequency RoPE; no validated 500K positional-extension method is included. The training helpers provide a minimal single-process optimizer-step path, but there is no distributed training, optimizer-state resume orchestration, architecture-integrated gradient checkpointing, paged KV cache, or optimized block-sparse attention here.
+This is a correctness-oriented reference, not a production training or serving kernel. Local attention avoids a full `[sequence, sequence]` mask by processing bounded query chunks, reducing local-attention temporary-mask memory to approximately `attention_chunk_size × (local_window + attention_chunk_size)`. Local-attention compute still scales with sequence length times window size. Global layers still perform full quadratic attention, so this hybrid implementation is **not** suitable for 500K-token prefill/training. The current RoPE is standard fixed-frequency RoPE; no validated 500K positional-extension method is included. The training helpers provide a minimal single-process optimizer-step path, but there is no distributed training, optimizer-state resume orchestration, paged KV cache or a validated long-context positional-extension method here.
 
 The default architecture configuration is a project hypothesis. Freeze the tokenizer vocabulary size and positional strategy before training; re-run parameter-count and memory/throughput measurements after any config change.
 
