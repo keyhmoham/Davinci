@@ -38,26 +38,22 @@ Davinci is an experimental Persian-first bilingual (Persian/English) language-mo
 
 ## Local setup
 
-Python 3.11+ is recommended. The CI environment pins PyTorch 2.6.0 (CPU) and pytest 8.3.5. For local runs, install PyTorch using the [official platform selector](https://pytorch.org/get-started/locally/) and install the pinned test tooling:
+Python 3.11+ is recommended. Install the editable package and test extras:
 
 ```bash
-python -m pip install torch pytest
+python -m pip install -e ".[test]"
 ```
 
-Run the model, training, generation, tool-call, notebook, and memory regression tests from the repository root:
+Install optional inference-server dependencies when needed:
 
 ```bash
-PYTHONPATH=. python -m pytest -q \
-  tests/test_model.py \
-  tests/test_train.py \
-  tests/test_long_context.py \
-  tests/test_hierarchical_retrieval.py \
-  tests/test_tool_call.py \
-  tests/test_generation.py \
-  tests/test_data_audit.py \
-  tests/test_sft.py \
-  tests/test_trajectory.py \
-  tests/test_notebook_integrity.py
+python -m pip install -e ".[server]"
+```
+
+Run the complete CPU regression suite:
+
+```bash
+python -m pytest -q tests
 ```
 
 Run the experimental microbenchmarks separately:
@@ -67,7 +63,7 @@ PYTHONPATH=. python experiments/benchmark_compressed_memory.py --device cpu
 PYTHONPATH=. python experiments/benchmark_hierarchical_retrieval.py --device cpu
 ```
 
-The benchmark outputs are synthetic diagnostics. Record the exact hardware, software versions, command-line arguments, and JSON output when comparing changes.
+The benchmark outputs are synthetic diagnostics. Record exact hardware, software versions, command-line arguments, and JSON output when comparing changes.
 
 ## Architecture snapshot
 
