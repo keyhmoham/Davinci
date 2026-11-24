@@ -44,6 +44,18 @@ def test_tool_result_serialization_preserves_explicit_trust_label():
     assert '"trusted":false' in payload
     with pytest.raises(TypeError, match="trusted must be a boolean"):
         tool_result_content("lookup", {}, trusted="false")
+    legacy = tool_result_content("lookup", {"ok": 1})
+    normalized = serialize_messages([
+        {"role": "user", "content": "lookup"},
+        {"role": "tool", "name": "lookup", "content": legacy, "trusted": False},
+    ])
+    assert tool_result_content("lookup", {"ok": 1}, trusted=False) in normalized
+    conflicting = tool_result_content("lookup", {"ok": 1}, trusted=True)
+    with pytest.raises(ValueError, match="conflicts"):
+        serialize_messages([
+            {"role": "user", "content": "lookup"},
+            {"role": "tool", "name": "lookup", "content": conflicting, "trusted": False},
+        ])
 
 def test_sft_tool_payloads_reject_names_not_accepted_by_runtime():
     with pytest.raises(ValueError, match="tool name must match"):
