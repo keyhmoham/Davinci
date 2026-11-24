@@ -107,21 +107,19 @@ def build_masked_example(
     return {"input_ids": input_ids, "labels": labels}
 
 
-def _group_key(example: Mapping[str, Any]) -> str:
+def _group_keys(example: Mapping[str, Any]) -> list[str]:
+    keys = []
     for field in ("source_document_id", "document_id"):
         value = example.get(field)
         if value is not None and str(value):
-            return f"{field}:{value}"
+            keys.append(f"{field}:{value}")
     payload = example.get("messages")
     if payload is None:
-        for field in ("example_id", "id"):
-            value = example.get(field)
-            if value is not None and str(value):
-                return f"{field}:{value}"
         payload = example
-    return "content:" + hashlib.sha256(
+    keys.append("content:" + hashlib.sha256(
         json.dumps(payload, sort_keys=True, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
-    ).hexdigest()
+    ).hexdigest())
+    return keys
 
 
 def split_examples(
@@ -130,30 +128,61 @@ def split_examples(
     validation_fraction: float = 0.05,
     seed: int = 42,
 ) -> tuple[list[Mapping[str, Any]], list[Mapping[str, Any]]]:
-    """Deterministically split by document/example identity, not shuffled row index."""
+    """Split connected document/content groups so neither source groups nor exact duplicates leak."""
     if not isinstance(validation_fraction, (int, float)) or isinstance(validation_fraction, bool):
         raise ValueError("validation_fraction must be numeric")
     if not 0.0 < validation_fraction < 1.0:
         raise ValueError("validation_fraction must be in (0, 1)")
     if not isinstance(seed, int) or isinstance(seed, bool):
         raise ValueError("seed must be an integer")
-    train, validation = [], []
-    assignments: dict[str, str] = {}
-    for example in examples:
+    items = list(examples)
+    if not items:
+        raise ValueError("examples must not be empty")
+
+    parent = list(range(len(items)))
+
+    def find(index: int) -> int:
+        while parent[index] != index:
+            parent[index] = parent[parent[index]]
+            index = parent[index]
+        return index
+
+    def union(left: int, right: int) -> None:
+        left_root, right_root = find(left), find(right)
+        if left_root != right_root:
+            parent[right_root] = left_root
+
+    first_for_key: dict[str, int] = {}
+    keys_by_item: list[list[str]] = []
+    for index, example in enumerate(items):
         if not isinstance(example, Mapping):
             raise TypeError("every example must be a mapping")
-        key = _group_key(example)
-        split = assignments.get(key)
-        if split is None:
-            digest = hashlib.sha256(f"{seed}:{key}".encode("utf-8")).hexdigest()
+        keys = _group_keys(example)
+        keys_by_item.append(keys)
+        for key in keys:
+            if key in first_for_key:
+                union(index, first_for_key[key])
+            else:
+                first_for_key[key] = index
+
+    component_keys: dict[int, list[str]] = {}
+    for index, keys in enumerate(keys_by_item):
+        root = find(index)
+        component_keys.setdefault(root, []).extend(keys)
+
+    assignments = {}
+    train, validation = [], []
+    for index, example in enumerate(items):
+        root = find(index)
+        if root not in assignments:
+            stable_key = min(component_keys[root])
+            digest = hashlib.sha256(f"{seed}:{stable_key}".encode("utf-8")).hexdigest()
             bucket = int(digest[:16], 16) / float(16**16)
-            split = "validation" if bucket < validation_fraction else "train"
-            assignments[key] = split
-        (validation if split == "validation" else train).append(example)
+            assignments[root] = "validation" if bucket < validation_fraction else "train"
+        (validation if assignments[root] == "validation" else train).append(example)
     if not train or not validation:
         raise ValueError("split produced an empty partition; add examples or adjust validation_fraction/seed")
     return train, validation
-
 
 def collate_masked(batch: Sequence[Mapping[str, Sequence[int]]], pad_id: int) -> tuple[torch.Tensor, torch.Tensor]:
     if not batch:
