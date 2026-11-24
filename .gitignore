@@ -1,0 +1,53 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+build/
+dist/
+*.egg-info/
+.venv/
+venv/
+
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+credentials.json
+token.json
+
+# Training artifacts and model weights
+*.pt
+*.pth
+*.safetensors
+*.ckpt
+*.bin
+*.model
+*.vocab
+*.onnx
+*.gguf
+checkpoints/
+runs/
+artifacts/
+outputs/
+
+# Dataset material (keep manifests/cards in the repository, not raw records)
+data/
+datasets/
+raw/
+processed/
+*.jsonl
+*.parquet
+*.arrow
+*.sqlite
+
+# Notebook and editor state
+.ipynb_checkpoints/
+.DS_Store
+.idea/
+.vscode/
