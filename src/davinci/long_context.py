@@ -28,10 +28,16 @@ class CompressedKVMemory:
     def append(self, key: torch.Tensor, value: torch.Tensor, positions: torch.Tensor) -> None:
         if key.ndim != 4 or value.shape != key.shape:
             raise ValueError("key/value must have matching [B,H,T,D] shapes")
+        if not key.is_floating_point() or not value.is_floating_point():
+            raise ValueError("key/value tensors must use floating-point dtypes")
+        if key.shape[2] == 0:
+            raise ValueError("append requires at least one KV token")
         if positions.ndim != 1 or positions.numel() != key.shape[2]:
             raise ValueError("positions must have shape [T]")
         if positions.device != key.device:
             raise ValueError("positions and KV tensors must be on the same device")
+        if positions.dtype not in (torch.int8, torch.int16, torch.int32, torch.int64, torch.uint8):
+            raise ValueError("positions must use an integer dtype")
         if key.device != value.device or key.dtype != value.dtype:
             raise ValueError("key and value must have the same device and dtype")
         if positions.numel() > 1 and torch.any(positions[1:] <= positions[:-1]):
@@ -39,6 +45,10 @@ class CompressedKVMemory:
         if self.recent_key is not None:
             if key.shape[:2] != self.recent_key.shape[:2] or key.shape[-1] != self.recent_key.shape[-1]:
                 raise ValueError("KV batch/head/head_dim shape changed")
+            if key.device != self.recent_key.device or key.dtype != self.recent_key.dtype:
+                raise ValueError("appended KV tensors must match cached device and dtype")
+            if positions.dtype != self.recent_positions.dtype:
+                raise ValueError("appended positions must match cached position dtype")
             if positions.numel() and self.recent_positions.numel() and positions[0] <= self.recent_positions[-1]:
                 raise ValueError("positions must be strictly increasing")
             key = torch.cat((self.recent_key, key), dim=2)
