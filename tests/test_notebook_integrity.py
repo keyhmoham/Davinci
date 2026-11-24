@@ -220,3 +220,12 @@ def test_pretraining_run_manifest_records_throughput_and_peak_memory():
     assert "progress.close()\nelapsed_seconds=max(time.time()-start,1e-9)" in source
     assert '"total_tokens_seen":total_tokens_seen+seen_tokens' in source
     assert 'int(state["data_state"].get("total_tokens_seen",0))' in source
+
+
+def test_sft_notebook_preserves_structured_tool_events_until_canonical_encoder():
+    source = _notebook_source("Davinci_SFT_Training_Chat_Finetuning.ipynb")
+    assert '"type":"tool_call"' in source
+    assert '"arguments":call.get("arguments")' in source
+    assert '"name":item.get("name")' in source
+    assert '"trusted":item["trusted"]' in source
+    assert 'tool_result_content(item["name"],item.get("content"))' not in source
