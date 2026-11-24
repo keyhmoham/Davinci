@@ -15,6 +15,7 @@ from .sft import (
     SPECIAL_TOKENS, build_masked_example, causal_sft_loss, collate_masked,
     serialize_messages, split_examples, tool_call_content, tool_result_content,
 )
+from .near_dedup import find_near_duplicate_pairs
 from .preference import (
     PreferenceDataError, dpo_loss, preference_split, sequence_log_probs,
     validate_preference_pair,
@@ -35,6 +36,7 @@ __all__ = [
     "quality_reasons", "text_statistics",
     "SPECIAL_TOKENS", "build_masked_example", "causal_sft_loss", "collate_masked",
     "serialize_messages", "split_examples", "tool_call_content", "tool_result_content",
+    "find_near_duplicate_pairs",
     "PreferenceDataError", "dpo_loss", "preference_split", "sequence_log_probs",
     "validate_preference_pair",
     "audit_trajectories", "export_jsonl", "split_trajectories", "trajectory_hash", "validate_trajectory",
