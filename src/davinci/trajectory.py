@@ -8,6 +8,8 @@ from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
+from .data_audit import normalize_persian_text
+
 _TOOL_NAME = re.compile(r"^[A-Za-z0-9_.-]{1,64}$")
 
 
@@ -147,7 +149,7 @@ def split_trajectories(
     validation_fraction: float = 0.05,
     seed: int = 42,
 ) -> tuple[list[Mapping[str, Any]], list[Mapping[str, Any]]]:
-    """Keep exact duplicate trajectories and shared source-document groups in one split."""
+    """Keep exact duplicates, shared source documents, and identical prompts together."""
     if not isinstance(validation_fraction, (int, float)) or isinstance(validation_fraction, bool):
         raise ValueError("validation_fraction must be numeric")
     if not 0.0 < validation_fraction < 1.0:
@@ -180,6 +182,14 @@ def split_trajectories(
         source_id = item.get("source_document_id")
         if source_id is not None and str(source_id):
             keys.append("source:" + str(source_id))
+        user_prompt = "\n".join(
+            normalize_persian_text(message.get("content", ""))
+            for message in item.get("messages", [])
+            if isinstance(message, Mapping) and message.get("role") == "user"
+            and isinstance(message.get("content"), str)
+        ).strip()
+        if user_prompt:
+            keys.append("prompt:" + hashlib.sha256(user_prompt.encode("utf-8")).hexdigest())
         keys_by_item.append(keys)
         for key in keys:
             if key in first_for_key:
