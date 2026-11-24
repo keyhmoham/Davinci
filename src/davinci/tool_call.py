@@ -10,6 +10,7 @@ from dataclasses import dataclass
 import json
 import math
 import re
+import inspect
 from typing import Any, Callable, Mapping
 
 
@@ -50,8 +51,13 @@ def parse_tool_call(text: str) -> ToolCall:
     """Parse exactly one JSON object: {"name": str, "arguments": object}."""
     if not isinstance(text, str) or not text.strip():
         raise ToolCallError("Tool-call output must be a non-empty JSON string")
+    def reject_constant(value):
+        raise ToolCallError(f"Non-standard JSON constant is not allowed: {value}")
+
     try:
-        payload = json.loads(text, object_pairs_hook=_unique_object)
+        payload = json.loads(
+            text, object_pairs_hook=_unique_object, parse_constant=reject_constant
+        )
     except ToolCallError:
         raise
     except json.JSONDecodeError as exc:
@@ -78,12 +84,77 @@ def _matches_type(value: Any, expected: str) -> bool:
     if expected == "integer":
         return isinstance(value, int) and not isinstance(value, bool)
     if expected == "number":
-        return isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value)
+        return (isinstance(value, int) and not isinstance(value, bool)) or (
+            isinstance(value, float) and math.isfinite(value)
+        )
     if expected == "boolean":
         return isinstance(value, bool)
     if expected == "null":
         return value is None
     raise ToolCallError(f"Unsupported JSON Schema type: {expected!r}")
+
+
+_ALLOWED_SCHEMA_KEYS = {
+    "type", "properties", "required", "additionalProperties", "items", "enum",
+    "minItems", "maxItems", "uniqueItems", "minLength", "maxLength", "pattern",
+    "minimum", "maximum", "description", "title", "default", "examples",
+}
+_ALLOWED_SCHEMA_TYPES = {"object", "array", "string", "integer", "number", "boolean", "null"}
+
+
+def _validate_schema_definition(schema: Mapping[str, Any], path: str = "$schema") -> None:
+    if not isinstance(schema, Mapping):
+        raise ValueError(f"{path} must be a JSON Schema object")
+    unknown = set(schema) - _ALLOWED_SCHEMA_KEYS
+    if unknown:
+        raise ValueError(f"{path} uses unsupported schema keywords: {sorted(unknown)}")
+    expected = schema.get("type")
+    if expected is not None and expected not in _ALLOWED_SCHEMA_TYPES:
+        raise ValueError(f"{path}.type is unsupported")
+    properties = schema.get("properties", {})
+    if not isinstance(properties, Mapping):
+        raise ValueError(f"{path}.properties must be an object")
+    for name, child in properties.items():
+        if not isinstance(name, str):
+            raise ValueError(f"{path}.properties keys must be strings")
+        _validate_schema_definition(child, f"{path}.properties.{name}")
+    required = schema.get("required", [])
+    if (not isinstance(required, list) or any(not isinstance(x, str) for x in required)
+            or len(required) != len(set(required))):
+        raise ValueError(f"{path}.required must be a unique list of strings")
+    additional = schema.get("additionalProperties", False)
+    if not isinstance(additional, bool):
+        _validate_schema_definition(additional, f"{path}.additionalProperties")
+    if "items" in schema:
+        _validate_schema_definition(schema["items"], f"{path}.items")
+    if "enum" in schema and (not isinstance(schema["enum"], list) or not schema["enum"]):
+        raise ValueError(f"{path}.enum must be a non-empty list")
+    for key in ("minItems", "maxItems", "minLength", "maxLength"):
+        if key in schema and (
+            not isinstance(schema[key], int) or isinstance(schema[key], bool) or schema[key] < 0
+        ):
+            raise ValueError(f"{path}.{key} must be a non-negative integer")
+    if schema.get("minItems", 0) > schema.get("maxItems", math.inf):
+        raise ValueError(f"{path}.minItems cannot exceed maxItems")
+    if schema.get("minLength", 0) > schema.get("maxLength", math.inf):
+        raise ValueError(f"{path}.minLength cannot exceed maxLength")
+    if "uniqueItems" in schema and not isinstance(schema["uniqueItems"], bool):
+        raise ValueError(f"{path}.uniqueItems must be boolean")
+    if "pattern" in schema:
+        if not isinstance(schema["pattern"], str):
+            raise ValueError(f"{path}.pattern must be a string")
+        try:
+            re.compile(schema["pattern"])
+        except re.error as exc:
+            raise ValueError(f"{path}.pattern is invalid: {exc}") from exc
+    for key in ("minimum", "maximum"):
+        if key in schema and (
+            not isinstance(schema[key], (int, float)) or isinstance(schema[key], bool)
+            or (isinstance(schema[key], float) and not math.isfinite(schema[key]))
+        ):
+            raise ValueError(f"{path}.{key} must be a finite number")
+    if schema.get("minimum", -math.inf) > schema.get("maximum", math.inf):
+        raise ValueError(f"{path}.minimum cannot exceed maximum")
 
 
 def _validate_value(value: Any, schema: Mapping[str, Any], path: str) -> None:
@@ -162,6 +233,7 @@ class ToolRegistry:
             raise ValueError("Tool description must be a string")
         if not isinstance(parameters, Mapping) or parameters.get("type") != "object":
             raise ValueError("Tool parameters must be a JSON Schema object")
+        _validate_schema_definition(parameters)
         if not callable(function):
             raise ValueError("Tool implementation must be callable")
         definition = ToolDefinition(name, description, deepcopy(dict(parameters)))
@@ -183,12 +255,22 @@ class ToolRegistry:
         parsed = parse_tool_call(call) if isinstance(call, str) else call
         if not isinstance(parsed, ToolCall):
             raise ToolCallError("execute expects ToolCall or serialized JSON")
+        if not isinstance(parsed.name, str) or not _NAME_RE.fullmatch(parsed.name):
+            raise ToolCallError("Tool name has an invalid format")
+        if not isinstance(parsed.arguments, dict):
+            raise ToolCallError("Tool arguments must be a JSON object")
         if parsed.name not in self._tools:
             raise ToolCallError(f"Unknown tool: {parsed.name}")
         definition, function = self._tools[parsed.name]
         _validate_value(parsed.arguments, definition.parameters, "$")
         try:
             result = function(**parsed.arguments)
+            if inspect.isawaitable(result):
+                if inspect.iscoroutine(result):
+                    result.close()
+                raise ToolExecutionError("Async tools are not supported by this synchronous registry")
+        except ToolExecutionError:
+            raise
         except Exception as exc:
             raise ToolExecutionError(f"Tool {parsed.name!r} failed: {exc}") from exc
         return result
