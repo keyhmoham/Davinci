@@ -233,6 +233,9 @@ def test_sft_notebook_preserves_structured_tool_events_until_canonical_encoder()
 
 def test_sft_notebook_applies_prompt_grouped_split_before_training():
     source = _notebook_source("Davinci_SFT_Training_Chat_Finetuning.ipynb")
-    assert "train_examples,val_examples=split_examples(examples,validation_fraction=0.05,seed=SEED)" in source
+    assert "VALIDATION_FRACTION=0.05" in source
+    assert "train_examples,val_examples=split_examples(examples,validation_fraction=VALIDATION_FRACTION,seed=SEED)" in source
+    assert '"validation_fraction":VALIDATION_FRACTION' in source
+    assert '"split_strategy":"normalized_prompt_source_document_exact_content"' in source
     assert 'item["split"]=="train"' not in source
     assert 'item["split"]=="validation"' not in source
